@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("N.EntityFramework.BulkExtensions")]
+[assembly: AssemblyTitle("N.EntityFramework.Extensions")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("NorthernLight")]
-[assembly: AssemblyProduct("N.EntityFramework.BulkExtensions")]
+[assembly: AssemblyProduct("N.EntityFramework.Extensions")]
 [assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

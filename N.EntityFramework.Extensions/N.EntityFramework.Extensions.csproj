@@ -8,8 +8,8 @@
     <ProjectGuid>{EBFA8667-BB63-41C0-A5BA-E41CA2B553E8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>N.EntityFramework.BulkExtensions</RootNamespace>
-    <AssemblyName>N.EntityFramework.BulkExtensions</AssemblyName>
+    <RootNamespace>N.EntityFramework.Extensions</RootNamespace>
+    <AssemblyName>N.EntityFramework.Extensions</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -51,17 +51,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BulkInsertOptions.cs" />
-    <Compile Include="BulkMergeOption.cs" />
-    <Compile Include="DbContextExtensions.cs" />
-    <Compile Include="EntityDataReader.cs" />
+    <Compile Include="Data\BulkInsertOptions.cs" />
+    <Compile Include="Data\BulkMergeOption.cs" />
+    <Compile Include="Data\DbContextExtensions.cs" />
+    <Compile Include="Data\EntityDataReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SqlUtil.cs" />
-    <Compile Include="TableMapping.cs" />
-    <Compile Include="ObjectExtensions.cs" />
+    <Compile Include="Util\SqlUtil.cs" />
+    <Compile Include="Data\TableMapping.cs" />
+    <Compile Include="Extensions\ObjectExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

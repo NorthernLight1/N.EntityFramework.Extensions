@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace N.EntityFramework.BulkExtensions
+namespace N.EntityFramework.Extensions
 {
     internal static class ObjectExtensions
     {

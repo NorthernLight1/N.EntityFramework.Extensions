@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 
-namespace N.EntityFramework.BulkExtensions
+namespace N.EntityFramework.Extensions
 {
     internal class EntityDataReader<T> : IDataReader
     {
