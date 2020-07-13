@@ -2,7 +2,7 @@
 using System.Data.Entity.Core.Mapping;
 using System.Data.Entity.Core.Metadata.Edm;
 
-namespace EntityFramework.BulkExtensions
+namespace N.EntityFramework.BulkExtensions
 {
     internal class TableMapping
     {

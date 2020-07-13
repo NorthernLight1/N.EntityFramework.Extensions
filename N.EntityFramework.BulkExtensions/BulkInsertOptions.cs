@@ -1,4 +1,4 @@
-﻿namespace EntityFramework.BulkExtensions
+﻿namespace N.EntityFramework.BulkExtensions
 {
     public class BulkInsertOptions<T>
     {

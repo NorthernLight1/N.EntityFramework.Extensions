@@ -8,8 +8,8 @@
     <ProjectGuid>{EBFA8667-BB63-41C0-A5BA-E41CA2B553E8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EntityFramework.BulkExtensions</RootNamespace>
-    <AssemblyName>EntityFramework.BulkExtensions</AssemblyName>
+    <RootNamespace>N.EntityFramework.BulkExtensions</RootNamespace>
+    <AssemblyName>N.EntityFramework.BulkExtensions</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace EntityFramework.BulkExtensions
+namespace N.EntityFramework.BulkExtensions
 {
     internal static partial class DbContextExtensions
     {

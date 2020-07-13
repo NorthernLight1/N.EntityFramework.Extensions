@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace EntityFramework.BulkExtensions
+namespace N.EntityFramework.BulkExtensions
 {
     public class BulkMergeOptions<T>
     {

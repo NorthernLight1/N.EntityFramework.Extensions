@@ -1,6 +1,6 @@
 ﻿using System.Data.SqlClient;
 
-namespace EntityFramework.BulkExtensions
+namespace N.EntityFramework.BulkExtensions
 {
     internal static class SqlUtil
     {
