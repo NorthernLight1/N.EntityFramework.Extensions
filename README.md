@@ -3,7 +3,7 @@ Bulk data support for the EntityFramework 6.4.4+
 
 The framework currently supports the following bulk operations:
 
-  BulkInsert(), BulkMerge()
+  BulkInsert(), BulkMerge(), BulkDelete()
 
 
 Future support will include:
