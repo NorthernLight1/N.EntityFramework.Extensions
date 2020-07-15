@@ -1,4 +1,6 @@
-﻿using System.Data.SqlClient;
+﻿using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
 
 namespace N.EntityFramework.Extensions
 {
@@ -16,6 +18,11 @@ namespace N.EntityFramework.Extensions
         internal static int CloneTable(string sourceTable, string destinationTable, SqlConnection connection, SqlTransaction transaction)
         {
             return ExecuteSql(string.Format("SELECT TOP 0 * INTO {0} FROM {1}", destinationTable, sourceTable), connection, transaction);
+        }
+
+        internal static string ConvertToColumnString(IEnumerable<string> columnNames)
+        {
+            return string.Join(",", columnNames);
         }
     }
 }

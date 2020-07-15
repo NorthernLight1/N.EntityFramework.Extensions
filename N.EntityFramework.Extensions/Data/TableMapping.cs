@@ -4,7 +4,7 @@ using System.Data.Entity.Core.Metadata.Edm;
 
 namespace N.EntityFramework.Extensions
 {
-    internal class TableMapping
+    public class TableMapping
     {
         public EntitySetMapping Mapping { get; set; }
         public EntitySet EntitySet { get; set; }

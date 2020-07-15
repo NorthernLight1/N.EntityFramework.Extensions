@@ -13,6 +13,9 @@ namespace N.EntityFramework.Extensions
         public Func<T, T, bool> MatchedCondition { get; set; }
         public Expression<Func<T, object>> IgnoreColumnsOnInsert { get; set; }
         public Expression<Func<T, object>> IgnoreColumnsOnUpdate { get; set; }
+        public bool AutoMapOutputIdentity { get; internal set; }
+        public bool UsePermanentTable { get; set; }
+
         public BulkMergeOptions()
         {
 
