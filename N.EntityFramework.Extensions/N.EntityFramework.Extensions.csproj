@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\BulkDeleteOptions.cs" />
     <Compile Include="Data\BulkInsertOptions.cs" />
     <Compile Include="Data\BulkMergeOption.cs" />
     <Compile Include="Data\BulkMergeOutputRow.cs" />

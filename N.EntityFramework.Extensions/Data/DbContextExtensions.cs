@@ -15,6 +15,41 @@ namespace N.EntityFramework.Extensions
 {
     public static partial class DbContextExtensions
     {
+        public static int BulkDelete<T>(this DbContext context, IEnumerable<T> entities, BulkDeleteOptions<T> options)
+        {
+            int rowsAffected = 0;
+            var tableMapping = context.GetTableMapping(typeof(T));
+            var dbConnection = context.GetSqlConnection();
+
+            if (dbConnection.State == ConnectionState.Closed)
+                dbConnection.Open();
+
+            using (var transaction = dbConnection.BeginTransaction())
+            {
+                try
+                {
+                    string stagingTableName = string.Format("[{0}].[#tmp_be_xx_{1}]", tableMapping.Schema, tableMapping.TableName);
+                    string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
+                    string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    string deleteCondition = string.Join(" AND ", storeGeneratedColumnNames.Select(o => string.Format("s.{0}=t.{0}", 0)));
+
+                    BulkInsert(entities, tableMapping, dbConnection, transaction, stagingTableName, storeGeneratedColumnNames);
+                    string deleteSql = string.Format("DELETE t FROM {0} s JOIN {1} t ON {2}", stagingTableName, destinationTableName, deleteCondition);
+                    rowsAffected = SqlUtil.ExecuteSql(deleteSql, dbConnection, transaction);
+                    transaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    dbConnection.Close();
+                }
+                return rowsAffected;
+            }
+        }
         public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities)
         {
             return context.BulkInsert<T>(entities, new BulkInsertOptions<T> { });
@@ -48,11 +83,9 @@ namespace N.EntityFramework.Extensions
             }
         }
 
-        private static void BulkInsert<T>(IEnumerable<T> entities, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName = null)
+        private static void BulkInsert<T>(IEnumerable<T> entities, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName = null, IEnumerable<string> inputColumns = null)
         {
             string destinationTableName = string.IsNullOrEmpty(tableName) ? string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName) : tableName;
-            string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
-
             var dataReader = new EntityDataReader<T>(tableMapping, entities);
             var sqlBulkCopy = new SqlBulkCopy(dbConnection, new SqlBulkCopyOptions(), transaction)
             {
@@ -60,7 +93,8 @@ namespace N.EntityFramework.Extensions
             };
             foreach (var column in dataReader.TableMapping.Columns)
             {
-                sqlBulkCopy.ColumnMappings.Add(column.Property.Name, column.Column.Name);
+                if(inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
+                    sqlBulkCopy.ColumnMappings.Add(column.Property.Name, column.Column.Name);
             }
             sqlBulkCopy.WriteToServer(dataReader);
         }
