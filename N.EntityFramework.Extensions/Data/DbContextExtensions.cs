@@ -15,6 +15,10 @@ namespace N.EntityFramework.Extensions
 {
     public static partial class DbContextExtensions
     {
+        public static int BulkDelete<T>(this DbContext context, IEnumerable<T> entities)
+        {
+            return context.BulkDelete(entities, new BulkDeleteOptions<T>());
+        }
         public static int BulkDelete<T>(this DbContext context, IEnumerable<T> entities, BulkDeleteOptions<T> options)
         {
             int rowsAffected = 0;
@@ -33,6 +37,7 @@ namespace N.EntityFramework.Extensions
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
                     string deleteCondition = string.Join(" AND ", storeGeneratedColumnNames.Select(o => string.Format("s.{0}=t.{0}", 0)));
 
+                    SqlUtil.CloneTable(destinationTableName, stagingTableName, dbConnection, transaction);
                     BulkInsert(entities, tableMapping, dbConnection, transaction, stagingTableName, storeGeneratedColumnNames);
                     string deleteSql = string.Format("DELETE t FROM {0} s JOIN {1} t ON {2}", stagingTableName, destinationTableName, deleteCondition);
                     rowsAffected = SqlUtil.ExecuteSql(deleteSql, dbConnection, transaction);
@@ -87,6 +92,7 @@ namespace N.EntityFramework.Extensions
         {
             string destinationTableName = string.IsNullOrEmpty(tableName) ? string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName) : tableName;
             var dataReader = new EntityDataReader<T>(tableMapping, entities);
+
             var sqlBulkCopy = new SqlBulkCopy(dbConnection, new SqlBulkCopyOptions(), transaction)
             {
                 DestinationTableName = destinationTableName
