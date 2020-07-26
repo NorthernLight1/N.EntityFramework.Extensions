@@ -38,7 +38,7 @@ namespace N.EntityFramework.Extensions
 
         public object this[string name] => throw new NotImplementedException();
 
-        public int Depth => throw new NotImplementedException();
+        public int Depth { get; set; }
 
         public bool IsClosed => throw new NotImplementedException();
 

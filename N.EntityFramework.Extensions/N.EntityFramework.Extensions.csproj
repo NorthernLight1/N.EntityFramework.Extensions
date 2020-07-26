@@ -56,10 +56,13 @@
     <Compile Include="Data\BulkMergeOption.cs" />
     <Compile Include="Data\BulkMergeOutputRow.cs" />
     <Compile Include="Data\BulkMergeResult.cs" />
+    <Compile Include="Data\BulkOptions.cs" />
     <Compile Include="Data\BulkQueryResult.cs" />
     <Compile Include="Data\DbContextExtensions.cs" />
     <Compile Include="Data\EntityDataReader.cs" />
     <Compile Include="Data\SqlMergeAction.cs" />
+    <Compile Include="Sql\SqlClause.cs" />
+    <Compile Include="Sql\SqlQuery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\SqlUtil.cs" />
     <Compile Include="Data\TableMapping.cs" />

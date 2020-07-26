@@ -19,7 +19,7 @@ namespace N.EntityFramework.Extensions
             EntityType = entityType;
             Mapping = mapping;
             Schema = string.IsNullOrEmpty(EntitySet.Schema) ? "dbo" : EntitySet.Schema;
-            TableName = EntitySet.ElementType.Name;
+            TableName = entitySet.Name;
         }
 
     }
