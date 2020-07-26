@@ -1,6 +1,6 @@
 ﻿namespace N.EntityFramework.Extensions
 {
-    public class BulkDeleteOptions<T>
+    public class BulkDeleteOptions<T> : BulkOptions
     {
     }
 }

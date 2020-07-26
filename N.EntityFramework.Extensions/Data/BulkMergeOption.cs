@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 
 namespace N.EntityFramework.Extensions
 {
-    public class BulkMergeOptions<T>
+    public class BulkMergeOptions<T> : BulkOptions
     {
         public Expression<Func<T, T, bool>> MergeOnCondition { get; set; }
         public Func<T, T, bool> NotMatchedBySourceCondition { get; set; }
@@ -14,7 +14,6 @@ namespace N.EntityFramework.Extensions
         public Expression<Func<T, object>> IgnoreColumnsOnInsert { get; set; }
         public Expression<Func<T, object>> IgnoreColumnsOnUpdate { get; set; }
         public bool AutoMapOutputIdentity { get; internal set; }
-        public bool UsePermanentTable { get; set; }
 
         public BulkMergeOptions()
         {
