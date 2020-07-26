@@ -12,6 +12,11 @@ namespace N.EntityFramework.Extensions
         public List<ScalarPropertyMapping> Columns { get; set; }
         public string Schema { get; }
         public string TableName { get; }
+        public string FullQualifedTableName
+        {
+            get { return string.Format("[{0}].[{1}]", this.Schema, this.TableName);  }
+        }
+
         public TableMapping(List<ScalarPropertyMapping> columns, EntitySet entitySet, EntityType entityType, EntitySetMapping mapping)
         {
             Columns = columns;

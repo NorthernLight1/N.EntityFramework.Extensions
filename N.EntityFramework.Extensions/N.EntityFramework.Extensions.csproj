@@ -59,8 +59,12 @@
     <Compile Include="Data\BulkOptions.cs" />
     <Compile Include="Data\BulkQueryResult.cs" />
     <Compile Include="Data\DbContextExtensions.cs" />
+    <Compile Include="Data\EfExtensionsCommand.cs" />
+    <Compile Include="Data\EfExtensionsCommandInterceptor.cs" />
     <Compile Include="Data\EntityDataReader.cs" />
     <Compile Include="Data\SqlMergeAction.cs" />
+    <Compile Include="Enums\EfExtensionsCommandType.cs" />
+    <Compile Include="Extensions\LinqExtensions.cs" />
     <Compile Include="Sql\SqlClause.cs" />
     <Compile Include="Sql\SqlQuery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
