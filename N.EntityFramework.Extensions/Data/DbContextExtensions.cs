@@ -7,6 +7,7 @@ using System.Data.Entity;
 using System.Data.Entity.Core.Mapping;
 using System.Data.Entity.Core.Metadata.Edm;
 using System.Data.Entity.Infrastructure;
+using System.Data.Entity.Infrastructure.Interception;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
@@ -17,6 +18,12 @@ namespace N.EntityFramework.Extensions
 {
     public static partial class DbContextExtensions
     {
+        private static EfExtensionsCommandInterceptor efExtensionsCommandInterceptor;
+        static DbContextExtensions()
+        {
+            efExtensionsCommandInterceptor = new EfExtensionsCommandInterceptor();
+            DbInterception.Add(efExtensionsCommandInterceptor);
+        }
         public static int BulkDelete<T>(this DbContext context, IEnumerable<T> entities)
         {
             return context.BulkDelete(entities, new BulkDeleteOptions<T>());
@@ -252,7 +259,7 @@ namespace N.EntityFramework.Extensions
                 RowsAffected = reader.RecordsAffected
             };
         }
-        public static int Delete<T>(this IQueryable<T> querable)
+        public static int DeleteFromQuery<T>(this IQueryable<T> querable)
         {
             int rowAffected = 0;
             var dbQuery = querable as DbQuery<T>;
@@ -282,7 +289,99 @@ namespace N.EntityFramework.Extensions
             }
             return rowAffected;
         }
+        public static int InsertFromQuery<T>(this IQueryable<T> querable, string tableName, Expression<Func<T, object>> insertObjectExpression)
+        {
+            int rowAffected = 0;
+            var dbQuery = querable as DbQuery<T>;
+            var dbConnection = GetSqlConnectionFromIQuerable(querable);
+            //Open datbase connection
+            if (dbConnection.State == ConnectionState.Closed)
+                dbConnection.Open();
 
+            using (var dbTransaction = dbConnection.BeginTransaction())
+            {
+                try
+                {
+                    var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
+                    sqlQuery.ChangeToInsert(tableName, insertObjectExpression);
+                    SqlUtil.ToggleIdentiyInsert(true, tableName, dbConnection, dbTransaction);
+                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
+                    SqlUtil.ToggleIdentiyInsert(false, tableName, dbConnection, dbTransaction);
+                    dbTransaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    dbTransaction.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    dbConnection.Close();
+                }
+            }
+            return rowAffected;
+        }
+        public static int UpdateFromQuery<T>(this IQueryable<T> querable, Expression<Func<T, T>> updateExpression)
+        {
+            int rowAffected = 0;
+            var dbQuery = querable as DbQuery<T>;
+            var dbConnection = GetSqlConnectionFromIQuerable(querable);
+            //Open datbase connection
+            if (dbConnection.State == ConnectionState.Closed)
+                dbConnection.Open();
+
+            using (var dbTransaction = dbConnection.BeginTransaction())
+            {
+                try
+                {
+                    var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
+                    string setSqlExpression = updateExpression.ToSqlUpdateSetExpression("Extent1");
+                    sqlQuery.ChangeToUpdate("[Extent1]", setSqlExpression);
+                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
+                    dbTransaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    dbTransaction.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    dbConnection.Close();
+                }
+            }
+            return rowAffected;
+        }
+        public static IQueryable<T> UsingTable<T>(this IQueryable<T> querable, string tableName)
+        {
+            var dbContext = GetDbContextFromIQuerable(querable);
+            var tableMapping = dbContext.GetTableMapping(typeof(T));
+            efExtensionsCommandInterceptor.AddCommand(Guid.NewGuid(),
+                new EfExtensionsCommand
+                {
+                    CommandType = EfExtensionsCommandType.ChangeTableName,
+                    OldValue = tableMapping.FullQualifedTableName,
+                    NewValue = string.Format("[{0}].[{1}]", tableMapping.Schema, tableName),
+                    Connection = dbContext.GetSqlConnection()
+                }); 
+            return querable;
+        }
+        private static DbContext GetDbContextFromIQuerable<T>(IQueryable<T> querable)
+        {
+            DbContext dbContext;
+            try
+            {
+                var dbQuery = querable as DbQuery<T>;
+                var internalQuery = querable.GetPrivateFieldValue("InternalQuery");
+                var internalContext = internalQuery.GetPrivateFieldValue("InternalContext");
+                dbContext = internalContext.GetPrivateFieldValue("Owner") as DbContext;
+            }
+            catch
+            {
+                throw new Exception("This extension method requires a DbQuery<T> instance");
+            }
+            return dbContext;
+        }
         private static SqlConnection GetSqlConnectionFromIQuerable<T>(IQueryable<T> querable)
         {
             SqlConnection dbConnection;
@@ -318,6 +417,17 @@ namespace N.EntityFramework.Extensions
             stringBuilder.Replace("&&", "AND");
             stringBuilder.Replace("==", "=");
             return stringBuilder.ToString();
+        }
+        private static string ToSqlUpdateSetExpression<T>(this Expression<T> expression, string tableName)
+        {
+            List<string> setValues = new List<string>();
+            var memberInitExpression = expression.Body as MemberInitExpression;
+            foreach(var binding in memberInitExpression.Bindings)
+            {
+                var constantExpression = binding.GetPrivateFieldValue("Expression") as ConstantExpression;
+                setValues.Add(string.Format("[{0}].[{1}]='{2}'", tableName, binding.Member.Name, constantExpression.Value));
+            }
+            return string.Join(",", setValues);
         }
 
         public static TableMapping GetTableMapping(this IObjectContextAdapter context, Type type)

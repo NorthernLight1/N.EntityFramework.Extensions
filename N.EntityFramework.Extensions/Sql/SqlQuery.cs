@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -67,23 +68,46 @@ namespace N.EntityFramework.Extensions.Sql
 
             return value;
         }
-
         public static SqlQuery Parse(string sql)
         {
             return new SqlQuery(sql);
         }
-
         public void ChangeToDelete(string expression)
         {
+            Validate();
             var sqlClause = Clauses.FirstOrDefault();
             if(sqlClause != null)
             {
                 sqlClause.Name = "DELETE";
                 sqlClause.InputText = expression;
             }
-            else
+        }
+        public void ChangeToUpdate(string updateExpression, string setExpression)
+        {
+            Validate();
+            var sqlClause = Clauses.FirstOrDefault();
+            if (sqlClause != null)
             {
-                throw new Exception("You must parse a valid sql statement before you can use this funciton.");
+                sqlClause.Name = "UPDATE";
+                sqlClause.InputText = updateExpression;
+                Clauses.Insert(1, new SqlClause { Name = "SET", InputText = setExpression });
+            }
+        }
+        internal void ChangeToInsert<T>(string tableName, Expression<Func<T, object>> insertObjectExpression)
+        {
+            Validate();
+            var sqlSelectClause = Clauses.FirstOrDefault();
+            string columnsToInsert = string.Join(",", insertObjectExpression.GetObjectProperties());
+            string insertValueExpression = string.Format("INTO {0} ({1})", tableName, columnsToInsert);
+            Clauses.Insert(0, new SqlClause { Name = "INSERT", InputText = insertValueExpression });
+            sqlSelectClause.InputText = columnsToInsert;
+            
+        }
+        private void Validate()
+        {
+            if(Clauses.Count == 0)
+            {
+                throw new Exception("You must parse a valid sql statement before you can use this function.");
             }
         }
     }

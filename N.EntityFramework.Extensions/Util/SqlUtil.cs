@@ -21,10 +21,14 @@ namespace N.EntityFramework.Extensions
             string columns = columnNames != null && columnNames.Length > 0 ? string.Join(",", columnNames) : "*";
             return ExecuteSql(string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable), connection, transaction);
         }
-
         internal static string ConvertToColumnString(IEnumerable<string> columnNames)
         {
             return string.Join(",", columnNames);
+        }
+        internal static int ToggleIdentiyInsert(bool enable, string tableName, SqlConnection dbConnection, SqlTransaction dbTransaction)
+        {
+            string boolString = enable ? "ON" : "OFF";
+            return ExecuteSql(string.Format("SET IDENTITY_INSERT {0} {1}", tableName, boolString), dbConnection, dbTransaction);
         }
     }
 }
