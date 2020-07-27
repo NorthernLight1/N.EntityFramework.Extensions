@@ -368,10 +368,19 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
-                    sqlQuery.ChangeToInsert(tableName, insertObjectExpression);
-                    SqlUtil.ToggleIdentiyInsert(true, tableName, dbConnection, dbTransaction);
-                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
-                    SqlUtil.ToggleIdentiyInsert(false, tableName, dbConnection, dbTransaction);
+                    if (SqlUtil.TableExists(tableName, dbConnection, dbTransaction))
+                    {
+                        sqlQuery.ChangeToInsert(tableName, insertObjectExpression);
+                        SqlUtil.ToggleIdentiyInsert(true, tableName, dbConnection, dbTransaction);
+                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
+                        SqlUtil.ToggleIdentiyInsert(false, tableName, dbConnection, dbTransaction);
+                    }
+                    else
+                    {
+                        sqlQuery.Clauses.First().InputText += string.Format(" INTO {0}", tableName);
+                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
+                    }
+
                     dbTransaction.Commit();
                 }
                 catch (Exception ex)

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Data.Entity.Core.Mapping;
 using System.Data.Entity.Core.Metadata.Edm;
+using System.Linq;
 
 namespace N.EntityFramework.Extensions
 {
@@ -19,12 +20,13 @@ namespace N.EntityFramework.Extensions
 
         public TableMapping(List<ScalarPropertyMapping> columns, EntitySet entitySet, EntityType entityType, EntitySetMapping mapping)
         {
+            var storeEntitySet = mapping.EntityTypeMappings.Single().Fragments.Single().StoreEntitySet;
             Columns = columns;
             EntitySet = entitySet;
             EntityType = entityType;
             Mapping = mapping;
-            Schema = string.IsNullOrEmpty(EntitySet.Schema) ? "dbo" : EntitySet.Schema;
-            TableName = entitySet.Name;
+            Schema = (string)storeEntitySet.MetadataProperties["Schema"].Value ?? storeEntitySet.Schema; 
+            TableName = (string)storeEntitySet.MetadataProperties["Table"].Value ?? storeEntitySet.Name;
         }
 
     }

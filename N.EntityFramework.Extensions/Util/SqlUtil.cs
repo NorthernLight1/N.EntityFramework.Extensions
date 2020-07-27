@@ -12,6 +12,11 @@ namespace N.EntityFramework.Extensions
             var sqlCommand = new SqlCommand(query, connection, transaction);
             return sqlCommand.ExecuteNonQuery();
         }
+        internal static object ExecuteScalar(string query, SqlConnection connection, SqlTransaction transaction)
+        {
+            var sqlCommand = new SqlCommand(query, connection, transaction);
+            return sqlCommand.ExecuteScalar();
+        }
         internal static int DeleteTable(string tableName, SqlConnection connection, SqlTransaction transaction)
         {
             return ExecuteSql(string.Format("DROP TABLE {0}", tableName), connection, transaction);
@@ -29,6 +34,12 @@ namespace N.EntityFramework.Extensions
         {
             string boolString = enable ? "ON" : "OFF";
             return ExecuteSql(string.Format("SET IDENTITY_INSERT {0} {1}", tableName, boolString), dbConnection, dbTransaction);
+        }
+
+        internal static bool TableExists(string tableName, SqlConnection dbConnection, SqlTransaction dbTransaction)
+        {
+            return Convert.ToBoolean(ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName), 
+                dbConnection, dbTransaction));
         }
     }
 }
