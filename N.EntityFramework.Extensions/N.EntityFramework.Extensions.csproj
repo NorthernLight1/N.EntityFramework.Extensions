@@ -58,6 +58,7 @@
     <Compile Include="Data\BulkMergeResult.cs" />
     <Compile Include="Data\BulkOptions.cs" />
     <Compile Include="Data\BulkQueryResult.cs" />
+    <Compile Include="Data\BulkUpdateOptions.cs" />
     <Compile Include="Data\DbContextExtensions.cs" />
     <Compile Include="Data\EfExtensionsCommand.cs" />
     <Compile Include="Data\EfExtensionsCommandInterceptor.cs" />
