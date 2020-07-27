@@ -48,7 +48,8 @@ The framework currently supports the following operations:
    ``` 
   var dbcontext = new MyDbContext(); 
   
-  //This will take all products priced under $10 from the Products table and insert it into the ProductsUnderTen table
+  //This will take all products priced under $10 from the Products table and 
+  //insert it into the ProductsUnderTen table
   dbcontext.Products.Where(x => x.Price < 10M).InsertFromQuery("ProductsUnderTen", o => new { o.Id, o.Price  });
 ```
   **UpdateFromQuery()**  
