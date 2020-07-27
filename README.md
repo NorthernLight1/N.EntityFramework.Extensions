@@ -4,9 +4,9 @@
 
 The framework currently supports the following operations:
 
-  BulkInsert(), BulkMerge(), BulkDelete(), Delete()
+  BulkDelete, BulkInsert, BulkMerge, BulkUpdate, DeleteFromQuery, InsertFromQuery, UpdateFromQuery
   
- ## Examples
+ ## Usage
    
  **BulkInsert()**  
    ```
@@ -23,6 +23,16 @@ The framework currently supports the following operations:
   var dbcontext = new MyDbContext();  
   var orders = dbcontext.Orders.Where(o => o.TotalPrice < 5.35M);  
   dbcontext.BulkDelete(orders);
+  ```
+  **BulkUpdate()**  
+  ```
+  var dbcontext = new MyDbContext();  
+  var products = dbcontext.Products.Where(o => o.Price < 5.35M);
+  foreach(var product in products)
+  {
+      order.Price = 6M;
+  }
+  dbcontext.BulkUpdate(products);
   ```
   **DeleteFromQuery()**  
    ``` 
@@ -50,5 +60,5 @@ The framework currently supports the following operations:
 ```
 ## Future support will include:
 
-  BulkQuery(), BulkUpdate()
+  BulkQuery()
   
