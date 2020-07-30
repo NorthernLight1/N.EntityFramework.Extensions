@@ -1,4 +1,5 @@
-﻿using System;
+﻿using N.EntityFramework.Extensions.Common;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
@@ -8,19 +9,28 @@ namespace N.EntityFramework.Extensions
     internal class EntityDataReader<T> : IDataReader
     {
         public TableMapping TableMapping { get; set; }
+        public Dictionary<int,T> EntityMap { get; set; }
         private Dictionary<string, int> columnIndexes;
+        private int currentId;
+        private bool useInternalId;
+        private int tableFieldCount;
         private IEnumerable<T> entities;
         private IEnumerator<T> enumerator;
         private Dictionary<int, Func<T, object>> selectors;
 
-        public EntityDataReader(TableMapping tableMapping, IEnumerable<T> entities)
+        public EntityDataReader(TableMapping tableMapping, IEnumerable<T> entities, bool useInternalId)
         {
             this.columnIndexes = new Dictionary<string, int>();
+            this.currentId = 0;
+            this.useInternalId = useInternalId;
+            this.tableFieldCount = tableMapping.Columns.Count;
             this.entities = entities;
             this.enumerator = entities.GetEnumerator();
             this.selectors = new Dictionary<int, Func<T, object>>();
+            this.EntityMap = new Dictionary<int, T>();
             this.FieldCount = tableMapping.Columns.Count;
             this.TableMapping = tableMapping;
+            
 
             int i = 0;
             foreach (var column in tableMapping.Columns)
@@ -31,6 +41,12 @@ namespace N.EntityFramework.Extensions
                 selectors[i] = expression.Compile();
                 columnIndexes[column.Property.Name] = i;
                 i++;
+            }
+            
+            if(useInternalId)
+            {
+                this.FieldCount++;
+                columnIndexes[Constants.Guid_ColumnName] = i;
             }
         }
 
@@ -159,7 +175,15 @@ namespace N.EntityFramework.Extensions
 
         public object GetValue(int i)
         {
-            return selectors[i](enumerator.Current);
+            if(i == tableFieldCount)
+            {
+                return this.currentId;
+            }
+            else
+            {
+                return selectors[i](enumerator.Current);
+            }
+            
         }
 
         public int GetValues(object[] values)
@@ -179,7 +203,14 @@ namespace N.EntityFramework.Extensions
 
         public bool Read()
         {
-            return enumerator.MoveNext();
+            bool moveNext = enumerator.MoveNext();
+            
+            if (moveNext && this.useInternalId)
+            {
+                this.currentId++;
+                this.EntityMap.Add(this.currentId, enumerator.Current);
+            }
+            return moveNext;
         }
     }
 }

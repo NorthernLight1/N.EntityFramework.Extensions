@@ -61,6 +61,36 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
+        //[TestMethod]
+        //public void BulkInsert_Options_AutoMapIdentity()
+        //{
+        //    TestDbContext dbContext = new TestDbContext();
+        //    SetupData(dbContext, true);
+        //    var orders = new List<Order>
+        //    {
+        //        new Order { ExternalId = "id-1", Price=7.10M },
+        //        new Order { ExternalId = "id-2", Price=9.33M },
+        //        new Order { ExternalId = "id-3", Price=3.25M },
+        //        new Order { ExternalId = "id-1000001", Price=2.15M },
+        //        new Order { ExternalId = "id-1000002", Price=5.75M },
+        //    };
+        //    int rowsAdded = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>
+        //    {
+        //        UsePermanentTable = true
+        //    });
+        //    bool autoMapIdentityMatched = true;
+        //    foreach (var order in orders)
+        //    {
+        //        if (!dbContext.Orders.Any(o => o.ExternalId == order.ExternalId && o.Id == order.Id && o.Price == order.Price))
+        //        {
+        //            autoMapIdentityMatched = false;
+        //            break;
+        //        }
+        //    }
+
+        //    Assert.IsTrue(rowsAdded == orders.Count, "The number of rows inserted must match the count of order list");
+        //    Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
+        //}
         [TestMethod]
         public void BulkInsert_Options_KeepIdentity()
         {
@@ -138,6 +168,41 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
             Assert.IsTrue(areAddedOrdersMerged, "The orders that were added did not merge correctly");
             Assert.IsTrue(areUpdatedOrdersMerged, "The orders that were updated did not merge correctly");
+        }
+        [TestMethod]
+        public void BulkMerge_Options_AutoMapIdentity()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int ordersToUpdate = 3;
+            int ordersToAdd = 2;
+            var orders = new List<Order>
+            {
+                new Order { ExternalId = "id-1", Price=7.10M },
+                new Order { ExternalId = "id-2", Price=9.33M },
+                new Order { ExternalId = "id-3", Price=3.25M },
+                new Order { ExternalId = "id-1000001", Price=2.15M },
+                new Order { ExternalId = "id-1000002", Price=5.75M },
+            };
+            var result = dbContext.BulkMerge(orders, new BulkMergeOptions<Order>
+            {
+                MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId,
+                UsePermanentTable = true
+            }) ;
+            bool autoMapIdentityMatched = true;
+            foreach(var order in orders)
+            {
+                if (!dbContext.Orders.Any(o => o.ExternalId == order.ExternalId && o.Id == order.Id && o.Price == order.Price))
+                {
+                    autoMapIdentityMatched = false;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(result.RowsAffected == ordersToAdd + ordersToUpdate, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(result.RowsUpdated == ordersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
+            Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
         }
         [TestMethod]
         public void BulkUpdate()
@@ -227,7 +292,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 int id = 1;
                 for (int i = 0; i < 2050; i++)
                 {
-                    orders.Add(new Order { Id = id, Price = 1.25M });
+                    orders.Add(new Order { Id = id, ExternalId=string.Format("id-{0}",i), Price = 1.25M });
                     id++;
                 }
                 for (int i = 0; i < 1050; i++)
