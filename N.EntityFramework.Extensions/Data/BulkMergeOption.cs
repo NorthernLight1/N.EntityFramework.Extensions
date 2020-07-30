@@ -13,11 +13,11 @@ namespace N.EntityFramework.Extensions
         public Func<T, T, bool> MatchedCondition { get; set; }
         public Expression<Func<T, object>> IgnoreColumnsOnInsert { get; set; }
         public Expression<Func<T, object>> IgnoreColumnsOnUpdate { get; set; }
-        public bool AutoMapOutputIdentity { get; internal set; }
+        public bool AutoMapOutputIdentity { get; set; }
 
         public BulkMergeOptions()
         {
-
+            this.AutoMapOutputIdentity = true;
         }
         public List<string> GetIgnoreColumnsOnInsert()
         {

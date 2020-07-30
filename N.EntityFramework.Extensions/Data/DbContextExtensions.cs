@@ -1,4 +1,5 @@
-﻿using N.EntityFramework.Extensions.Sql;
+﻿using N.EntityFramework.Extensions.Common;
+using N.EntityFramework.Extensions.Sql;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -81,7 +82,7 @@ namespace N.EntityFramework.Extensions
         }
         public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities, BulkInsertOptions<T> options)
         {
-            int rowsAffected = 0;
+            BulkInsertResult<T> result;
             var tableMapping = context.GetTableMapping(typeof(T));
             var dbConnection = context.GetSqlConnection();
 
@@ -96,7 +97,7 @@ namespace N.EntityFramework.Extensions
                     SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default;
                     if (options.KeepIdentity)
                         bulkCopyOptions = bulkCopyOptions | SqlBulkCopyOptions.KeepIdentity;
-                    rowsAffected = BulkInsert(entities, options, tableMapping, dbConnection, transaction, tableName, options.GetInputColumns(), bulkCopyOptions);
+                    result = BulkInsert(entities, options, tableMapping, dbConnection, transaction, tableName, options.GetInputColumns(), bulkCopyOptions);
                     //ClearEntityStateToUnchanged(context, entities);
                     transaction.Commit();
                 }
@@ -109,15 +110,14 @@ namespace N.EntityFramework.Extensions
                 {
                     dbConnection.Close();
                 }
-                return rowsAffected;
+                return result.RowsAffected;
             }
         }
 
-        private static int BulkInsert<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName,
-            string[] inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default)
+        private static BulkInsertResult<T> BulkInsert<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName,
+            string[] inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId=false)
         {
-            //string destinationTableName = string.IsNullOrEmpty(tableName) ? string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName) : tableName;
-            var dataReader = new EntityDataReader<T>(tableMapping, entities);
+            var dataReader = new EntityDataReader<T>(tableMapping, entities, useInteralId);
 
             var sqlBulkCopy = new SqlBulkCopy(dbConnection, bulkCopyOptions, transaction)
             {
@@ -129,8 +129,16 @@ namespace N.EntityFramework.Extensions
                 if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
                     sqlBulkCopy.ColumnMappings.Add(column.Property.Name, column.Column.Name);
             }
+            if (useInteralId)
+            {
+                sqlBulkCopy.ColumnMappings.Add(Constants.Guid_ColumnName, Constants.Guid_ColumnName);
+            }
             sqlBulkCopy.WriteToServer(dataReader);
-            return Convert.ToInt32(sqlBulkCopy.GetPrivateFieldValue("_rowsCopied"));
+
+            return new BulkInsertResult<T> {
+                RowsAffected = Convert.ToInt32(sqlBulkCopy.GetPrivateFieldValue("_rowsCopied")),
+                EntityMap = dataReader.EntityMap
+            };
         }
 
         public static BulkMergeResult<T> BulkMerge<T>(this DbContext context, IEnumerable<T> entities, BulkMergeOptions<T> options)
@@ -155,12 +163,12 @@ namespace N.EntityFramework.Extensions
                     string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
-                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction);
-                    BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity);
+                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.Guid_ColumnName);
+                    var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
 
                     IEnumerable<string> columnsToInsert = columnNames.Where(o => !options.GetIgnoreColumnsOnInsert().Contains(o));
                     IEnumerable<string> columnstoUpdate = columnNames.Where(o => !options.GetIgnoreColumnsOnUpdate().Contains(o)).Select(o => string.Format("t.{0}=s.{0}", o));
-                    List<string> columnsToOutput = new List<string> { "$Action" };
+                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}","s", Constants.Guid_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
                     Type entityType = typeof(T);
 
@@ -182,24 +190,25 @@ namespace N.EntityFramework.Extensions
                     var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction);
                     rowsAffected = bulkQueryResult.RowsAffected;
 
-                    var entitiesEnumerator = entities.GetEnumerator();
-                    entitiesEnumerator.MoveNext();
+                    //var entitiesEnumerator = entities.GetEnumerator();
+                    //entitiesEnumerator.MoveNext();
                     foreach (var result in bulkQueryResult.Results)
                     {
-                        var entity = entitiesEnumerator.Current;
                         string action = (string)result[0];
+                        int id = (int)result[1];
+                        var entity = bulkInsertResult.EntityMap[id];
                         outputRows.Add(new BulkMergeOutputRow<T>(action, entity));
-                        if (options.AutoMapOutputIdentity)
+                        if (options.AutoMapOutputIdentity && entity != null)
                         {
-                            for (int i = 1; i < result.Length; i++)
+                            
+                            for (int i = 2; i < result.Length; i++)
                             {
                                 propertySetters[0].SetValue(entity, result[i]);
                             }
                         }
                         if (action == SqlMergeAction.Insert) rowsInserted++;
-                        if (action == SqlMergeAction.Update) rowsUpdated++;
-                        if (action == SqlMergeAction.Detete) rowsDeleted++;
-                        entitiesEnumerator.MoveNext();
+                        else if (action == SqlMergeAction.Update) rowsUpdated++;
+                        else if (action == SqlMergeAction.Detete) rowsDeleted++;
                     }
                     SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
 
@@ -466,9 +475,9 @@ namespace N.EntityFramework.Extensions
                 var context = internalQuery.GetPrivateFieldValue("InternalContext");
                 dbConnection = context.GetPrivateFieldValue("Connection") as SqlConnection;
             }
-            catch
+            catch(Exception ex)
             {
-                throw new Exception("This extension method requires a DbQuery<T> instance");
+                throw new Exception("This extension method requires a DbQuery<T> instance", ex);
             }
             return dbConnection;
         }

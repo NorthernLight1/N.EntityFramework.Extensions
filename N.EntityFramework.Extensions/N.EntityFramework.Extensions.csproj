@@ -52,8 +52,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\Constants.cs" />
     <Compile Include="Data\BulkDeleteOptions.cs" />
     <Compile Include="Data\BulkInsertOptions.cs" />
+    <Compile Include="Data\BulkInsertResult.cs" />
     <Compile Include="Data\BulkMergeOption.cs" />
     <Compile Include="Data\BulkMergeOutputRow.cs" />
     <Compile Include="Data\BulkMergeResult.cs" />
@@ -75,7 +77,6 @@
     <Compile Include="Extensions\ObjectExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
