@@ -80,9 +80,10 @@ namespace N.EntityFramework.Extensions
         {
             return context.BulkInsert<T>(entities, new BulkInsertOptions<T> { });
         }
+
         public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities, BulkInsertOptions<T> options)
         {
-            BulkInsertResult<T> result;
+            int rowsAffected = 0;
             var tableMapping = context.GetTableMapping(typeof(T));
             var dbConnection = context.GetSqlConnection();
 
@@ -93,13 +94,52 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    string tableName = string.IsNullOrEmpty(options.TableName) ? string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName) : options.TableName;
-                    SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default;
-                    if (options.KeepIdentity)
-                        bulkCopyOptions = bulkCopyOptions | SqlBulkCopyOptions.KeepIdentity;
-                    result = BulkInsert(entities, options, tableMapping, dbConnection, transaction, tableName, options.GetInputColumns(), bulkCopyOptions);
+                    string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
+                    string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
+                    string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+
+                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.Guid_ColumnName);
+                    var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
+
+                    IEnumerable<string> columnsToInsert = columnNames;
+
+                    List<string> columnsToOutput = new List<string>();
+                    List<PropertyInfo> propertySetters = new List<PropertyInfo>();
+                    Type entityType = typeof(T);
+
+                    foreach (var storeGeneratedColumnName in storeGeneratedColumnNames)
+                    {
+                        columnsToOutput.Add(string.Format("inserted.[{0}]", storeGeneratedColumnName));
+                        propertySetters.Add(entityType.GetProperty(storeGeneratedColumnName));
+                    }
+
+                    string mergeSqlText = string.Format("INSERT INTO {0} OUTPUT {1} SELECT {2} FROM {3};",
+                        destinationTableName, SqlUtil.ConvertToColumnString(columnsToOutput), SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName
+                     );
+
+                    var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction);
+                    rowsAffected = bulkQueryResult.RowsAffected;
+
+                    if (options.AutoMapOutputIdentity)
+                    {
+                        if (rowsAffected == entities.Count())
+                        {
+                            var entityIndex = 1;
+                            bulkQueryResult.Results.ToList().ForEach(x =>
+                            {
+                                var entity = bulkInsertResult.EntityMap[entityIndex];
+                                propertySetters[0].SetValue(entity, x[0]);
+                                entityIndex++;
+                            });
+                        }
+                    }
+
+                    SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
+
                     //ClearEntityStateToUnchanged(context, entities);
                     transaction.Commit();
+                    return rowsAffected;
                 }
                 catch (Exception ex)
                 {
@@ -110,7 +150,7 @@ namespace N.EntityFramework.Extensions
                 {
                     dbConnection.Close();
                 }
-                return result.RowsAffected;
+
             }
         }
 

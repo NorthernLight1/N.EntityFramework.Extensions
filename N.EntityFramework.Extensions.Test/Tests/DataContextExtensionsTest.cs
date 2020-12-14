@@ -61,36 +61,36 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
-        //[TestMethod]
-        //public void BulkInsert_Options_AutoMapIdentity()
-        //{
-        //    TestDbContext dbContext = new TestDbContext();
-        //    SetupData(dbContext, true);
-        //    var orders = new List<Order>
-        //    {
-        //        new Order { ExternalId = "id-1", Price=7.10M },
-        //        new Order { ExternalId = "id-2", Price=9.33M },
-        //        new Order { ExternalId = "id-3", Price=3.25M },
-        //        new Order { ExternalId = "id-1000001", Price=2.15M },
-        //        new Order { ExternalId = "id-1000002", Price=5.75M },
-        //    };
-        //    int rowsAdded = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>
-        //    {
-        //        UsePermanentTable = true
-        //    });
-        //    bool autoMapIdentityMatched = true;
-        //    foreach (var order in orders)
-        //    {
-        //        if (!dbContext.Orders.Any(o => o.ExternalId == order.ExternalId && o.Id == order.Id && o.Price == order.Price))
-        //        {
-        //            autoMapIdentityMatched = false;
-        //            break;
-        //        }
-        //    }
+        [TestMethod]
+        public void BulkInsert_Options_AutoMapIdentity()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            var orders = new List<Order>
+            {
+                new Order { ExternalId = "id-1", Price=7.10M },
+                new Order { ExternalId = "id-2", Price=9.33M },
+                new Order { ExternalId = "id-3", Price=3.25M },
+                new Order { ExternalId = "id-1000001", Price=2.15M },
+                new Order { ExternalId = "id-1000002", Price=5.75M },
+            };
+            int rowsAdded = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>
+            {
+                UsePermanentTable = true
+            });
+            bool autoMapIdentityMatched = true;
+            foreach (var order in orders)
+            {
+                if (!dbContext.Orders.Any(o => o.ExternalId == order.ExternalId && o.Id == order.Id && o.Price == order.Price))
+                {
+                    autoMapIdentityMatched = false;
+                    break;
+                }
+            }
 
-        //    Assert.IsTrue(rowsAdded == orders.Count, "The number of rows inserted must match the count of order list");
-        //    Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
-        //}
+            Assert.IsTrue(rowsAdded == orders.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
+        }
         [TestMethod]
         public void BulkInsert_Options_KeepIdentity()
         {
