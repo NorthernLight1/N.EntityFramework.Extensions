@@ -114,9 +114,8 @@ namespace N.EntityFramework.Extensions
                         propertySetters.Add(entityType.GetProperty(storeGeneratedColumnName));
                     }
 
-                    string mergeSqlText = string.Format("INSERT INTO {0} OUTPUT {1} SELECT {2} FROM {3};",
-                        destinationTableName, SqlUtil.ConvertToColumnString(columnsToOutput), SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName
-                     );
+                    string mergeSqlText = string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4};",
+                        destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert), SqlUtil.ConvertToColumnString(columnsToOutput), SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName);
 
                     var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction);
                     rowsAffected = bulkQueryResult.RowsAffected;
