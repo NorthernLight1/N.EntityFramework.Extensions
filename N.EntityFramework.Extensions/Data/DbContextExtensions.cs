@@ -115,8 +115,7 @@ namespace N.EntityFramework.Extensions
                     }
 
                     string mergeSqlText = string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4};",
-                        destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert), SqlUtil.ConvertToColumnString(columnsToOutput), 
-                        SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName
+                        destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert), SqlUtil.ConvertToColumnString(columnsToOutput), SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName
                      );
 
                     if(options.KeepIdentity)
