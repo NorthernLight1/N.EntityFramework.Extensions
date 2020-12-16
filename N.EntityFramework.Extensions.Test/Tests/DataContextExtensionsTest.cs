@@ -107,11 +107,12 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 KeepIdentity = true,
                 BatchSize = 1000,
             });
+            var oldOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
             var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
             bool allIdentityFieldsMatch = true;
             for (int i = 0; i < 20000; i++)
             {
-                if (newOrders[i].Id != orders[i].Id)
+                if (newOrders[i].Id != oldOrders[i].Id)
                 {
                     allIdentityFieldsMatch = false;
                     break;

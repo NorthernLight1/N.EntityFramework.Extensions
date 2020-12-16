@@ -96,7 +96,7 @@ namespace N.EntityFramework.Extensions
                 {
                     string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    string[] columnNames = tableMapping.Columns.Where(o => options.KeepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
                     SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.Guid_ColumnName);
@@ -117,7 +117,11 @@ namespace N.EntityFramework.Extensions
                     string mergeSqlText = string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4};",
                         destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert), SqlUtil.ConvertToColumnString(columnsToOutput), SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName);
 
+                    if(options.KeepIdentity)
+                        SqlUtil.ToggleIdentiyInsert(true, destinationTableName, dbConnection, transaction);
                     var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction);
+                    if (options.KeepIdentity)
+                        SqlUtil.ToggleIdentiyInsert(false, destinationTableName, dbConnection, transaction);
                     rowsAffected = bulkQueryResult.RowsAffected;
 
                     if (options.AutoMapOutputIdentity)
@@ -125,12 +129,12 @@ namespace N.EntityFramework.Extensions
                         if (rowsAffected == entities.Count())
                         {
                             var entityIndex = 1;
-                            bulkQueryResult.Results.ToList().ForEach(x =>
+                            foreach(var result in bulkQueryResult.Results)
                             {
                                 var entity = bulkInsertResult.EntityMap[entityIndex];
-                                propertySetters[0].SetValue(entity, x[0]);
+                                propertySetters[0].SetValue(entity,result[0]);
                                 entityIndex++;
-                            });
+                            }
                         }
                     }
 
