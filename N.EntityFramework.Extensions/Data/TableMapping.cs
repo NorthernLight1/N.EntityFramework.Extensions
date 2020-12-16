@@ -28,7 +28,6 @@ namespace N.EntityFramework.Extensions
             Schema = (string)storeEntitySet.MetadataProperties["Schema"].Value ?? storeEntitySet.Schema; 
             TableName = (string)storeEntitySet.MetadataProperties["Table"].Value ?? storeEntitySet.Name;
         }
-
     }
 }
 
