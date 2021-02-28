@@ -58,6 +58,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Article.cs" />
     <Compile Include="Data\Order.cs" />
     <Compile Include="Data\TestDbContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

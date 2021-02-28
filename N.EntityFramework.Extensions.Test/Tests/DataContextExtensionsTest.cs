@@ -62,6 +62,23 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
         [TestMethod]
+        public void BulkInsert_Without_Identity_Column()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            var articles = new List<Article>();
+            for (int i = 0; i < 20000; i++)
+            {
+                articles.Add(new Article { ArticleId = i.ToString(), Price = 1.57M });
+            }
+            int oldTotal = dbContext.Articles.Where(o => o.Price <= 10).Count();
+            int rowsInserted = dbContext.BulkInsert(articles);
+            int newTotal = dbContext.Articles.Where(o => o.Price <= 10).Count();
+
+            Assert.IsTrue(rowsInserted == articles.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
+        }
+        [TestMethod]
         public void BulkInsert_Options_AutoMapIdentity()
         {
             TestDbContext dbContext = new TestDbContext();
