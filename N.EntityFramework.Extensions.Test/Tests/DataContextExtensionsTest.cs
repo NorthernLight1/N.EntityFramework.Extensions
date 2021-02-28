@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using N.EntityFramework.Extensions;
 using N.EntityFramework.Extensions.Test.Data;
@@ -284,9 +286,110 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
             Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
         }
+        [TestMethod]
+        public void UpdateFromQuery_With_Different_Culture()
+        {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("sv-SE");
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            int rowUpdated = dbContext.Orders.Where(o => o.Price < 10M).UpdateFromQuery(o => new Order { Price = 25.30M });
+            int newTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            int matchCount = dbContext.Orders.Where(o => o.Price == 25.30M).Count();
+
+            Assert.AreEqual("25,30", Convert.ToString(25.30M));
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < $10)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condtion (Price < $10)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+            Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
+        }
+        [TestMethod]
+        public void UpdateFromQuery_With_Null_Value()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Orders.Where(o => o.ExternalId != null).Count();
+            int rowUpdated = dbContext.Orders.Where(o => o.ExternalId != null).UpdateFromQuery(o => new Order { ExternalId = null });
+            int newTotal = dbContext.Orders.Where(o => o.ExternalId != null).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (ExternalId != null)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (ExternalId != null)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
+        [TestMethod]
+        public void UpdateFromQuery_With_Boolean_Value()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Articles.Count(a => a.OutOfStock);
+            int rowUpdated = dbContext.Articles.Where(a => a.OutOfStock).UpdateFromQuery(a => new Article { OutOfStock = false });
+            int newTotal = dbContext.Articles.Count(o => o.OutOfStock);
+
+            Assert.IsTrue(oldTotal > 0, "There must be articles in database that match this condition (OutOfStock == true)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (OutOfStock == false)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
+        [TestMethod]
+        public void UpdateFromQuery_With_Expression()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            decimal priceStart = 10M;
+            decimal priceUpdate = 0.34M;
+
+            int oldTotal = dbContext.Orders.Count(a => a.Price < 10);
+            int rowUpdated = dbContext.Orders.Where(a => a.Price < 10).UpdateFromQuery(a => new Order { Price = priceStart + priceUpdate });
+            int newTotal = dbContext.Orders.Count(o => o.Price < 10);
+
+            Assert.IsTrue(oldTotal > 0, "There must be articles in database that match this condition (Price < 10)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Price < 10)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
+
+        [TestMethod]
+        public void UpdateFromQuery_With_Expression_Accessing_Previous_Value_Fails()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            decimal priceUpdate = 0.34M;
+
+            // Access to previous value creates an exception as the value must be present when we create the SQL code.
+            Assert.ThrowsException<InvalidOperationException>(() => dbContext.Orders.Where(a => a.Price < 10).UpdateFromQuery(a => new Order { Price = a.Price + priceUpdate }));
+        }
+        
+        [TestMethod]
+        public void UpdateFromQuery_With_String_Containing_Apostrophe()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Orders.Where(o => o.ExternalId == null).Count();
+            int rowUpdated = dbContext.Orders.Where(o => o.ExternalId == null).UpdateFromQuery(o => new Order { ExternalId = "inv'alid" });
+            int newTotal = dbContext.Orders.Where(o => o.ExternalId == null).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (ExternalId == null)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (ExternalId == null)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
+        [TestMethod]
+        public void UpdateFromQuery_With_DateTime()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+
+            var now = DateTime.Now;
+
+            int oldTotal = dbContext.Articles.Where(a => a.Updated == null).Count();
+            int rowUpdated = dbContext.Articles.Where(a => a.Updated == null).UpdateFromQuery(o => new Article { Updated = now });
+            int newTotal = dbContext.Articles.Where(a => a.Updated == null).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Updated == null)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Updated == null)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
         private void SetupData(TestDbContext dbcontext, bool populateData)
         {
             dbcontext.Orders.DeleteFromQuery();
+            dbcontext.Articles.DeleteFromQuery();
             if (populateData)
             {
                 var orders = new List<Order>();
@@ -316,8 +419,24 @@ namespace N.EntityFramework.Extensions.Test.Tests
                     orders.Add(new Order { Id = id, Price = 15.35M });
                     id++;
                 }
+
                 Debug.WriteLine("Last Id for Order is {0}", id);
                 dbcontext.BulkInsert(orders, new BulkInsertOptions<Order>() { KeepIdentity = true });
+                var articles = new List<Article>();
+                id = 1;
+                for (int i = 0; i < 2050; i++)
+                {
+                    articles.Add(new Article { ArticleId = string.Format("id-{0}", i), Price = 1.25M, OutOfStock = false });
+                    id++;
+                }
+                for (int i = 0; i < 2050; i++)
+                {
+                    articles.Add(new Article { ArticleId = string.Format("id-{0}", id), Price = 1.25M, OutOfStock = true });
+                    id++;
+                }
+
+                Debug.WriteLine("Last Id for Article is {0}", id);
+                dbcontext.BulkInsert(articles, new BulkInsertOptions<Article>() { KeepIdentity = false, AutoMapOutputIdentity = false });
             }
         }
     }
