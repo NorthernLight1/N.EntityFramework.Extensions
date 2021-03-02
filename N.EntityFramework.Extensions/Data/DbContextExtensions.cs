@@ -52,7 +52,7 @@ namespace N.EntityFramework.Extensions
                     SqlUtil.CloneTable(destinationTableName, stagingTableName, storeGeneratedColumnNames, dbConnection, transaction);
                     BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, storeGeneratedColumnNames, SqlBulkCopyOptions.KeepIdentity);
                     string deleteSql = string.Format("DELETE t FROM {0} s JOIN {1} t ON {2}", stagingTableName, destinationTableName, deleteCondition);
-                    rowsAffected = SqlUtil.ExecuteSql(deleteSql, dbConnection, transaction);
+                    rowsAffected = SqlUtil.ExecuteSql(deleteSql, dbConnection, transaction, options);
                     SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
                     transaction.Commit();
                 }
@@ -115,14 +115,20 @@ namespace N.EntityFramework.Extensions
                         propertySetters.Add(entityType.GetProperty(storeGeneratedColumnName));
                     }
 
-                    string mergeSqlText = string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4};",
-                        destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert), SqlUtil.ConvertToColumnString(columnsToOutput), SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName);
+                    string mergeSqlText = columnsToOutput.Any()
+                        ? string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4};",
+                            destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
+                            SqlUtil.ConvertToColumnString(columnsToOutput),
+                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName)
+                        : string.Format("INSERT INTO {0} ({1}) SELECT {2} FROM {3};",
+                            destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
+                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName);
 
                     if(options.KeepIdentity)
-                        SqlUtil.ToggleIdentiyInsert(true, destinationTableName, dbConnection, transaction);
-                    var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction);
+                        SqlUtil.ToggleIdentityInsert(true, destinationTableName, dbConnection, transaction);
+                    var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction, options);
                     if (options.KeepIdentity)
-                        SqlUtil.ToggleIdentiyInsert(false, destinationTableName, dbConnection, transaction);
+                        SqlUtil.ToggleIdentityInsert(false, destinationTableName, dbConnection, transaction);
                     rowsAffected = bulkQueryResult.RowsAffected;
 
                     if (options.AutoMapOutputIdentity)
@@ -168,6 +174,10 @@ namespace N.EntityFramework.Extensions
                 DestinationTableName = tableName,
                 BatchSize = options.BatchSize
             };
+            if (options.CommandTimeout.HasValue)
+            {
+                sqlBulkCopy.BulkCopyTimeout = options.CommandTimeout.Value;
+            }
             foreach (var column in dataReader.TableMapping.Columns)
             {
                 if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
@@ -231,7 +241,7 @@ namespace N.EntityFramework.Extensions
                         SqlUtil.ConvertToColumnString(columnsToOutput)
                         );
 
-                    var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction);
+                    var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction, options);
                     rowsAffected = bulkQueryResult.RowsAffected;
 
                     //var entitiesEnumerator = entities.GetEnumerator();
@@ -312,7 +322,7 @@ namespace N.EntityFramework.Extensions
                     string updateSql = string.Format("UPDATE t SET {0} FROM {1} AS s JOIN {2} AS t ON {3}; SELECT @@RowCount;",
                         updateSetExpression, stagingTableName, destinationTableName, updateOnExpression);
 
-                    rowsUpdated = SqlUtil.ExecuteSql(updateSql, dbConnection, transaction);
+                    rowsUpdated = SqlUtil.ExecuteSql(updateSql, dbConnection, transaction, options);
                     SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
 
                     //ClearEntityStateToUnchanged(context, entities);
@@ -352,11 +362,15 @@ namespace N.EntityFramework.Extensions
             return tableName;
         }
 
-        private static BulkQueryResult BulkQuery(this DbContext context, string sqlText, SqlConnection dbConnection, SqlTransaction transaction)
+        private static BulkQueryResult BulkQuery(this DbContext context, string sqlText, SqlConnection dbConnection, SqlTransaction transaction, BulkOptions options)
         {
             var results = new List<object[]>();
             var columns = new List<string>();
             var command = new SqlCommand(sqlText, dbConnection, transaction);
+            if (options.CommandTimeout.HasValue)
+            {
+                command.CommandTimeout = options.CommandTimeout.Value;
+            }
             var reader = command.ExecuteReader();
             //Get column names
             for (int i = 0; i < reader.FieldCount; i++)
@@ -379,6 +393,10 @@ namespace N.EntityFramework.Extensions
         }
         public static int DeleteFromQuery<T>(this IQueryable<T> querable)
         {
+            return querable.DeleteFromQuery(new BulkDeleteOptions<T>());
+        }
+        public static int DeleteFromQuery<T>(this IQueryable<T> querable, BulkDeleteOptions<T> options)
+        {
             int rowAffected = 0;
             var dbQuery = querable as DbQuery<T>;
             var dbConnection = GetSqlConnectionFromIQuerable(querable);
@@ -392,7 +410,7 @@ namespace N.EntityFramework.Extensions
                 {
                     var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
                     sqlQuery.ChangeToDelete("[Extent1]");
-                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
+                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, options);
                     dbTransaction.Commit();
                 }
                 catch (Exception ex)
@@ -409,6 +427,10 @@ namespace N.EntityFramework.Extensions
         }
         public static int InsertFromQuery<T>(this IQueryable<T> querable, string tableName, Expression<Func<T, object>> insertObjectExpression)
         {
+            return querable.InsertFromQuery(tableName, insertObjectExpression, new BulkInsertOptions<T> { KeepIdentity = true });
+        }
+        public static int InsertFromQuery<T>(this IQueryable<T> querable, string tableName, Expression<Func<T, object>> insertObjectExpression, BulkInsertOptions<T> options)
+        {
             int rowAffected = 0;
             var dbQuery = querable as DbQuery<T>;
             var dbConnection = GetSqlConnectionFromIQuerable(querable);
@@ -424,14 +446,16 @@ namespace N.EntityFramework.Extensions
                     if (SqlUtil.TableExists(tableName, dbConnection, dbTransaction))
                     {
                         sqlQuery.ChangeToInsert(tableName, insertObjectExpression);
-                        SqlUtil.ToggleIdentiyInsert(true, tableName, dbConnection, dbTransaction);
-                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
-                        SqlUtil.ToggleIdentiyInsert(false, tableName, dbConnection, dbTransaction);
+                        if(options.KeepIdentity)
+                            SqlUtil.ToggleIdentityInsert(true, tableName, dbConnection, dbTransaction);
+                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, options);
+                        if(options.KeepIdentity)
+                            SqlUtil.ToggleIdentityInsert(false, tableName, dbConnection, dbTransaction);
                     }
                     else
                     {
                         sqlQuery.Clauses.First().InputText += string.Format(" INTO {0}", tableName);
-                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
+                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, options);
                     }
 
                     dbTransaction.Commit();
@@ -450,6 +474,10 @@ namespace N.EntityFramework.Extensions
         }
         public static int UpdateFromQuery<T>(this IQueryable<T> querable, Expression<Func<T, T>> updateExpression)
         {
+            return querable.UpdateFromQuery(updateExpression, new BulkUpdateOptions<T>());
+        }
+        public static int UpdateFromQuery<T>(this IQueryable<T> querable, Expression<Func<T, T>> updateExpression, BulkUpdateOptions<T> options)
+        {
             int rowAffected = 0;
             var dbQuery = querable as DbQuery<T>;
             var dbConnection = GetSqlConnectionFromIQuerable(querable);
@@ -464,7 +492,7 @@ namespace N.EntityFramework.Extensions
                     var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
                     string setSqlExpression = updateExpression.ToSqlUpdateSetExpression("Extent1");
                     sqlQuery.ChangeToUpdate("[Extent1]", setSqlExpression);
-                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction);
+                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, options);
                     dbTransaction.Commit();
                 }
                 catch (Exception ex)
