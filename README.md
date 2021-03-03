@@ -1,4 +1,7 @@
 # N.EntityFramework.Extensions
+--------------------
+
+[![latest version](https://img.shields.io/nuget/v/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions)
 
 **If you are using Entity Framework Core v5.0.1+, you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
 
@@ -7,7 +10,15 @@
 The framework currently supports the following operations:
 
   BulkDelete, BulkInsert, BulkMerge, BulkUpdate, DeleteFromQuery, InsertFromQuery, UpdateFromQuery
-  
+
+  ### Installation
+
+  The latest stable version is available on [NuGet](https://www.nuget.org/packages/N.EntityFramework.Extensions).
+
+  ```sh
+  dotnet add package N.EntityFramework.Extensions
+  ```
+
  ## Usage
    
  **BulkInsert()**  
