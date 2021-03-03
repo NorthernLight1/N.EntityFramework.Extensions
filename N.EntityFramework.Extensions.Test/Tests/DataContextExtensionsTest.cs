@@ -111,6 +111,49 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
         }
         [TestMethod]
+        public void BulkMerge()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            var orders = dbContext.Orders.Where(o => o.Id <= 10000).OrderBy(o => o.Id).ToList();
+            int ordersToAdd = 5000;
+            int ordersToUpdate = orders.Count;
+            foreach (var order in orders)
+            {
+                order.Price = Convert.ToDecimal(order.Id + .25);
+            }
+            for (int i = 0; i < ordersToAdd; i++)
+            {
+                orders.Add(new Order { Id = 100000 + i, Price = 3.55M });
+            }
+            var result = dbContext.BulkMerge(orders);
+            var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
+            bool areAddedOrdersMerged = true;
+            bool areUpdatedOrdersMerged = true;
+            foreach (var newOrder in newOrders.Where(o => o.Id <= 10000).OrderBy(o => o.Id))
+            {
+                if (newOrder.Price != Convert.ToDecimal(newOrder.Id + .25))
+                {
+                    areUpdatedOrdersMerged = false;
+                    break;
+                }
+            }
+            foreach (var newOrder in newOrders.Where(o => o.Id >= 500000).OrderBy(o => o.Id))
+            {
+                if (newOrder.Price != 3.55M)
+                {
+                    areAddedOrdersMerged = false;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(result.RowsAffected == orders.Count(), "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(result.RowsUpdated == ordersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
+            Assert.IsTrue(areAddedOrdersMerged, "The orders that were added did not merge correctly");
+            Assert.IsTrue(areUpdatedOrdersMerged, "The orders that were updated did not merge correctly");
+        }
+        [TestMethod]
         public void BulkInsert_Options_KeepIdentity()
         {
             TestDbContext dbContext = new TestDbContext();
@@ -143,7 +186,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(allIdentityFieldsMatch, "The identities between the source and the database should match.");
         }
         [TestMethod]
-        public void BulkMerge_Options_Default()
+        public void BulkMerge_Options_MergeOnCondition()
         {
             TestDbContext dbContext = new TestDbContext();
             SetupData(dbContext, true);
@@ -270,6 +313,27 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
             Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
+        public void Fetch()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int batchSize = 1000;
+            int batchCount = 0;
+            int totalCount = 0;
+            int expectedTotalCount = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            int expectedBatchCount = (int)Math.Ceiling(expectedTotalCount / (decimal)batchSize);
+
+            dbContext.Orders.Where(o => o.Price < 10M).Fetch(result =>
+            {
+                batchCount++;
+                totalCount += result.Results.Count();
+            }, new FetchOptions { BatchSize = 1000 });
+
+            Assert.IsTrue(expectedTotalCount > 0, "There must be orders in database that match this condition");
+            Assert.IsTrue(expectedTotalCount == totalCount, "The total number of rows fetched must match the count of existing rows in database");
+            Assert.IsTrue(expectedBatchCount == batchCount, "The total number of batches fetched must match what is expected");
         }
         [TestMethod]
         public void InsertFromQuery()
