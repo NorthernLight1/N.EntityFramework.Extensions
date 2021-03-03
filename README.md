@@ -36,6 +36,20 @@ The framework currently supports the following operations:
   }
   dbcontext.BulkUpdate(products);
   ```
+  **BulkMerge()**  
+  ```
+  var dbcontext = new MyDbContext();
+  var products = new List<Product>();
+  var existingProducts = dbcontext.Products.Where(o => o.Price < 5.35M);
+  foreach(var product in existingProducts)
+  {
+      product.Price = 6M;
+  }
+  products.AddRange(existingProducts);
+  products.Add(new Product { Name="Hat", Price=10.25M });
+  products.Add(new Product { Name="Shirt", Price=20.95M });
+  dbcontext.BulkMerge(products);
+  ```
   **DeleteFromQuery()**  
    ``` 
   var dbcontext = new MyDbContext(); 
@@ -52,7 +66,7 @@ The framework currently supports the following operations:
   
   //This will take all products priced under $10 from the Products table and 
   //insert it into the ProductsUnderTen table
-  dbcontext.Products.Where(x => x.Price < 10M).InsertFromQuery("ProductsUnderTen", o => new { o.Id, o.Price  });
+  dbcontext.Products.Where(x => x.Price < 10M).InsertFromQuery("ProductsUnderTen", o => new { o.Id, o.Price });
 ```
   **UpdateFromQuery()**  
    ``` 
