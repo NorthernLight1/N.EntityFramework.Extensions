@@ -72,6 +72,7 @@
     <Compile Include="Sql\SqlClause.cs" />
     <Compile Include="Sql\SqlQuery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\CommonUtil.cs" />
     <Compile Include="Util\SqlUtil.cs" />
     <Compile Include="Data\TableMapping.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
