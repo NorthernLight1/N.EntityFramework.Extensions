@@ -66,6 +66,8 @@
     <Compile Include="Data\EfExtensionsCommand.cs" />
     <Compile Include="Data\EfExtensionsCommandInterceptor.cs" />
     <Compile Include="Data\EntityDataReader.cs" />
+    <Compile Include="Data\FetchOptions.cs" />
+    <Compile Include="Data\FetchResult.cs" />
     <Compile Include="Data\SqlMergeAction.cs" />
     <Compile Include="Enums\EfExtensionsCommandType.cs" />
     <Compile Include="Extensions\LinqExtensions.cs" />

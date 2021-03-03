@@ -1,6 +1,5 @@
 ﻿using N.EntityFramework.Extensions.Common;
 using N.EntityFramework.Extensions.Sql;
-using N.EntityFramework.Extensions.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -346,6 +345,56 @@ namespace N.EntityFramework.Extensions
 
                 return rowsUpdated;
             }
+        }
+        public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions options) where T : class, new()
+        {
+            var dbQuery = querable as DbQuery<T>;
+            var dbContext = GetDbContextFromIQuerable(querable);
+            var dbConnection = dbContext.GetSqlConnection();
+            //Open datbase connection
+            if (dbConnection.State == ConnectionState.Closed)
+                dbConnection.Open();
+
+            var command = new SqlCommand(dbQuery.Sql, dbConnection);
+            var reader = command.ExecuteReader();
+
+            List<PropertyInfo> propertySetters = new List<PropertyInfo>();
+            var entityType = typeof(T);
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                propertySetters.Add(entityType.GetProperty(reader.GetName(i)));
+            }
+            //Read data
+            int batch = 1;
+            int count = 0;
+            int totalCount = 0;
+            var entities = new List<T>();
+            while (reader.Read())
+            {
+                var entity = new T();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    var value = reader.GetValue(i);
+                    if (value == DBNull.Value)
+                        value = null;
+                    propertySetters[i].SetValue(entity, value);
+                }
+                entities.Add(entity);
+                count++;
+                totalCount++;
+                if (count == options.BatchSize)
+                {
+                    action(new FetchResult<T> { Results = entities, Batch = batch });
+                    entities.Clear();
+                    count = 0;
+                    batch++;
+                }
+            }
+
+            if (entities.Count > 0)
+                action(new FetchResult<T> { Results = entities, Batch = batch });
+            //close the DataReader
+            reader.Close();
         }
 
         private static void ClearEntityStateToUnchanged<T>(DbContext dbContext, IEnumerable<T> entities)
