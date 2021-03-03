@@ -50,6 +50,19 @@ The framework currently supports the following operations:
   products.Add(new Product { Name="Shirt", Price=20.95M });
   dbcontext.BulkMerge(products);
   ```
+  **Fetch() - Retrieve data in batches**  
+  ```
+  var dbcontext = new MyDbContext();  
+  var query = dbcontext.Products.Where(o => o.Price < 5.35M);
+  query.Fetch(result =>
+    {
+      batchCount++;
+      totalCount += result.Results.Count();
+    }, 
+    new FetchOptions { BatchSize = 1000 }
+  );
+  dbcontext.BulkUpdate(products);
+  ```
   **DeleteFromQuery()**  
    ``` 
   var dbcontext = new MyDbContext(); 
@@ -75,7 +88,4 @@ The framework currently supports the following operations:
   //This will change all products priced at $5.35 to $5.75 
   dbcontext.Products.Where(x => x.Price == 5.35M).UpdateFromQuery(o => new Product { Price = 5.75M }) 
 ```
-## Future support will include:
-
-  BulkQuery()
   
