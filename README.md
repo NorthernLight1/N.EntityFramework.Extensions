@@ -16,7 +16,7 @@ The framework currently supports the following operations:
   The latest stable version is available on [NuGet](https://www.nuget.org/packages/N.EntityFramework.Extensions).
 
   ```sh
-  dotnet add package N.EntityFramework.Extensions
+  Install-Package N.EntityFramework.Extensions
   ```
 
  ## Usage
