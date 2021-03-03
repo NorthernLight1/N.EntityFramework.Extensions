@@ -67,7 +67,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         public void BulkInsert_Without_Identity_Column()
         {
             TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, false);
+            SetupData(dbContext, true);
             var articles = new List<Article>();
             for (int i = 0; i < 20000; i++)
             {
