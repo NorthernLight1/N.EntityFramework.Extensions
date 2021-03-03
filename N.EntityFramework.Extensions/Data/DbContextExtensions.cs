@@ -10,6 +10,7 @@ using System.Data.Entity.Core.Metadata.Edm;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Infrastructure.Interception;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -578,10 +579,39 @@ namespace N.EntityFramework.Extensions
             var memberInitExpression = expression.Body as MemberInitExpression;
             foreach (var binding in memberInitExpression.Bindings)
             {
-                var constantExpression = binding.GetPrivateFieldValue("Expression") as ConstantExpression;
-                setValues.Add(string.Format("[{0}].[{1}]='{2}'", tableName, binding.Member.Name, constantExpression.Value));
+                string constantValue = GetExpressionValueAsString<T>(binding);
+
+                setValues.Add(string.Format("[{0}].[{1}]={2}", tableName, binding.Member.Name, constantValue));
             }
             return string.Join(",", setValues);
+        }
+
+        private static string GetExpressionValueAsString<T>(MemberBinding binding)
+        {
+            var value = GetExpressionValue(binding);
+
+            if (value == null)
+                return "NULL";
+            if (value is string str)
+                return "'" + str.Replace("'", "''") + "'";
+            if (value is bool b)
+                return b ? "1" : "0";
+            if (value is DateTime dt)
+                return "'" + dt.ToString("yyyy-MM-ddTHH:mm:ss.fff") + "'"; // Convert to ISO-8601
+            if (!value.GetType().IsClass)
+                return Convert.ToString(value, CultureInfo.InvariantCulture);
+
+            throw new NotImplementedException("Unhandled data type.");
+        }
+
+        private static object GetExpressionValue(MemberBinding binding)
+        {
+            if (binding.GetPrivateFieldValue("Expression") is ConstantExpression constantExpression)
+            {
+                return constantExpression.Value;
+            }
+            
+            return Expression.Lambda(binding.GetPrivateFieldValue("Expression") as Expression).Compile().DynamicInvoke();
         }
 
         public static TableMapping GetTableMapping(this IObjectContextAdapter context, Type type)

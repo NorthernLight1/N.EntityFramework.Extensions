@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace N.EntityFramework.Extensions.Test.Data
@@ -8,6 +8,8 @@ namespace N.EntityFramework.Extensions.Test.Data
         [Key]
         public string ArticleId { get; set; }
         public decimal Price { get; set; }
+        public bool OutOfStock { get; set; }
+        public DateTime? Updated { get; set; }
         public Article()
         {
 
