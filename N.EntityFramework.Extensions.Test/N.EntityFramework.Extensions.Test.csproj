@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="Data\Article.cs" />
     <Compile Include="Data\Order.cs" />
+    <Compile Include="Data\TestDbConfiguration.cs" />
     <Compile Include="Data\TestDbContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tests\DataContextExtensionsTest.cs" />

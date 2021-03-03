@@ -9,9 +9,13 @@ namespace N.EntityFramework.Extensions.Test.Data
         public virtual DbSet<Order> Orders { get; set;  }
         public virtual DbSet<Article> Articles { get; set;  }
 
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        public TestDbContext()
         {
-            Database.SetInitializer<TestDbContext>(null);
+            Database.SetInitializer(new MigrateDatabaseToLatestVersion<TestDbContext, TestDbConfiguration>());
+        }
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        { 
+            base.OnModelCreating(modelBuilder);
         }
     }
 }
