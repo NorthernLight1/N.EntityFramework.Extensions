@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -51,6 +52,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         public void BulkInsert()
         {
             TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, false);
             var orders = new List<Order>();
             for (int i = 0; i < 20000; i++)
             {
@@ -111,6 +113,73 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
         }
         [TestMethod]
+        public void BulkInsert_Options_KeepIdentity()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, false);
+            var orders = new List<Order>();
+            for (int i = 0; i < 20000; i++)
+            {
+                orders.Add(new Order { Id = i, Price = 1.57M });
+            }
+            int oldTotal = dbContext.Orders.Count();
+            int rowsInserted = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>()
+            {
+                KeepIdentity = true,
+                BatchSize = 1000,
+            });
+            var oldOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
+            var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
+            bool allIdentityFieldsMatch = true;
+            for (int i = 0; i < 20000; i++)
+            {
+                if (newOrders[i].Id != oldOrders[i].Id)
+                {
+                    allIdentityFieldsMatch = false;
+                    break;
+                }
+            }
+            try
+            {
+                int rowsInserted2 = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>()
+                {
+                    KeepIdentity = true,
+                    BatchSize = 1000,
+                });
+            }
+            catch(Exception ex)
+            {
+                Assert.IsInstanceOfType(ex, typeof(SqlException));
+                Assert.IsTrue(ex.Message.StartsWith("Violation of PRIMARY KEY constraint 'PK_dbo.Orders'."));
+            }
+
+            Assert.IsTrue(oldTotal == 0, "There should not be any records in the table");
+            Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(allIdentityFieldsMatch, "The identities between the source and the database should match.");
+        }
+        [TestMethod]
+        public void BulkInsert_Options_InsertIfNotExists()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            var orders = new List<Order>();
+            long maxId = dbContext.Orders.Max(o => o.Id);
+            long expectedRowsInserted = 1000;
+            int existingRowsToAdd = 100;
+            long startId = maxId - existingRowsToAdd + 1, endId = maxId + expectedRowsInserted + 1;
+            for (long i = startId; i < endId; i++)
+            {
+                orders.Add(new Order { Id = i, Price = 1.57M });
+            }
+
+            int oldTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
+            int rowsInserted = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>() { InsertIfNotExists = true });
+            int newTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
+
+            Assert.IsTrue(rowsInserted == expectedRowsInserted, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == expectedRowsInserted, "The new count minus the old count should match the number of rows inserted.");
+        }
+        [TestMethod]
         public void BulkMerge()
         {
             TestDbContext dbContext = new TestDbContext();
@@ -152,38 +221,6 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
             Assert.IsTrue(areAddedOrdersMerged, "The orders that were added did not merge correctly");
             Assert.IsTrue(areUpdatedOrdersMerged, "The orders that were updated did not merge correctly");
-        }
-        [TestMethod]
-        public void BulkInsert_Options_KeepIdentity()
-        {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, false);
-            var orders = new List<Order>();
-            for (int i = 0; i < 20000; i++)
-            {
-                orders.Add(new Order { Id = i, Price = 1.57M });
-            }
-            int oldTotal = dbContext.Orders.Count();
-            int rowsInserted = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>()
-            {
-                KeepIdentity = true,
-                BatchSize = 1000,
-            });
-            var oldOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
-            var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
-            bool allIdentityFieldsMatch = true;
-            for (int i = 0; i < 20000; i++)
-            {
-                if (newOrders[i].Id != oldOrders[i].Id)
-                {
-                    allIdentityFieldsMatch = false;
-                    break;
-                }
-            }
-
-            Assert.IsTrue(oldTotal == 0, "There should not be any records in the table");
-            Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
-            Assert.IsTrue(allIdentityFieldsMatch, "The identities between the source and the database should match.");
         }
         [TestMethod]
         public void BulkMerge_Options_MergeOnCondition()

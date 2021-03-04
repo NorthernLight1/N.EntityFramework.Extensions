@@ -27,23 +27,5 @@ namespace N.EntityFramework.Extensions
         {
             return this.IgnoreColumnsOnUpdate == null ? new List<string>() : this.IgnoreColumnsOnUpdate.Body.Type.GetProperties().Select(o => o.Name).ToList();
         }
-        internal string GetMergeOnConditionSql(string[] storeGeneratedColumnNames)
-        {
-            string mergeOnConditionSql = string.Empty;
-            if (this.MergeOnCondition != null)
-            {
-                mergeOnConditionSql = this.MergeOnCondition.ToSqlPredicate("s", "t");
-            }
-            else
-            {
-                int i = 1;
-                foreach(var storeGeneratedColumnName in storeGeneratedColumnNames)
-                {
-                    mergeOnConditionSql += (i > 1 ? "AND" : "") + string.Format("s.{0}=t.{0}", storeGeneratedColumnName);
-                    i++;
-                }
-            }
-            return mergeOnConditionSql;
-        }
     }
 }

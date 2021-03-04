@@ -1,5 +1,6 @@
 ﻿using N.EntityFramework.Extensions.Common;
 using N.EntityFramework.Extensions.Sql;
+using N.EntityFramework.Extensions.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -115,18 +116,21 @@ namespace N.EntityFramework.Extensions
                         propertySetters.Add(entityType.GetProperty(storeGeneratedColumnName));
                     }
 
-                    string mergeSqlText = columnsToOutput.Any()
-                        ? string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4};",
+                    string whereSqlText = options.InsertIfNotExists ? string.Format(" WHERE NOT EXISTS(SELECT * FROM {0} WHERE {1})", destinationTableName,
+                        CommonUtil<T>.GetJoinConditionSql(options.InsertOnCondition, storeGeneratedColumnNames, destinationTableName, stagingTableName)) : "";
+
+                    string insertSqlText = columnsToOutput.Any()
+                        ? string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4}{5};",
                             destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
                             SqlUtil.ConvertToColumnString(columnsToOutput),
-                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName)
-                        : string.Format("INSERT INTO {0} ({1}) SELECT {2} FROM {3};",
+                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText)
+                        : string.Format("INSERT INTO {0} ({1}) SELECT {2} FROM {3}{4};",
                             destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
-                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName);
+                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText);
 
                     if(options.KeepIdentity)
                         SqlUtil.ToggleIdentityInsert(true, destinationTableName, dbConnection, transaction);
-                    var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction, options);
+                    var bulkQueryResult = context.BulkQuery(insertSqlText, dbConnection, transaction, options);
                     if (options.KeepIdentity)
                         SqlUtil.ToggleIdentityInsert(false, destinationTableName, dbConnection, transaction);
                     rowsAffected = bulkQueryResult.RowsAffected;
@@ -240,7 +244,7 @@ namespace N.EntityFramework.Extensions
                     }
 
                     string mergeSqlText = string.Format("MERGE {0} t USING {1} s ON ({2}) WHEN NOT MATCHED BY TARGET THEN INSERT ({3}) VALUES ({3}) WHEN MATCHED THEN UPDATE SET {4} OUTPUT {5};",
-                        destinationTableName, stagingTableName, options.GetMergeOnConditionSql(storeGeneratedColumnNames),
+                        destinationTableName, stagingTableName, CommonUtil<T>.GetJoinConditionSql(options.MergeOnCondition,storeGeneratedColumnNames, "s", "t"),
                         SqlUtil.ConvertToColumnString(columnsToInsert),
                         SqlUtil.ConvertToColumnString(columnstoUpdate),
                         SqlUtil.ConvertToColumnString(columnsToOutput)
