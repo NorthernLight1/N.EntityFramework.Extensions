@@ -40,13 +40,27 @@ namespace N.EntityFramework.Extensions.Test.Tests
         {
             TestDbContext dbContext = new TestDbContext();
             SetupData(dbContext, true);
-            var orders = dbContext.Orders.Where(o => o.Price <= 2).ToList();
+            var orders = dbContext.Orders.Where(o => o.Price == 1.25M).ToList();
             int rowsDeleted = dbContext.BulkDelete(orders);
-            int newTotal = dbContext.Orders.Where(o => o.Price <= 2).Count();
+            int newTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
 
             Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price < $2)");
             Assert.IsTrue(rowsDeleted == orders.Count, "The number of rows deleted must match the count of existing rows in database");
             Assert.IsTrue(newTotal == 0, "Must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
+        public void BulkDelete_Options_DeleteOnCondition()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
+            var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).ToList();
+            int rowsDeleted = dbContext.BulkDelete(orders, new BulkDeleteOptions<Order> { DeleteOnCondition = (s, t) => s.ExternalId == t.ExternalId, UsePermanentTable=true  });
+            int newTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
+
+            Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price < $2)");
+            Assert.IsTrue(rowsDeleted == orders.Count, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newTotal == oldTotal - rowsDeleted, "Must be 0 to indicate all records were deleted");
         }
         [TestMethod]
         public void BulkInsert()
@@ -227,8 +241,8 @@ namespace N.EntityFramework.Extensions.Test.Tests
         {
             TestDbContext dbContext = new TestDbContext();
             SetupData(dbContext, true);
-            var orders = dbContext.Orders.Where(o => o.Id <= 10000).OrderBy(o => o.Id).ToList();
-            int ordersToAdd = 5000;
+            var orders = dbContext.Orders.Where(o => o.Id <= 100 && o.ExternalId != null).OrderBy(o => o.Id).ToList();
+            int ordersToAdd = 50;
             int ordersToUpdate = orders.Count;
             foreach (var order in orders)
             {
@@ -240,13 +254,13 @@ namespace N.EntityFramework.Extensions.Test.Tests
             }
             var result = dbContext.BulkMerge(orders, new BulkMergeOptions<Order>
             {
-                MergeOnCondition = (s, t) => s.Id == t.Id,
+                MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId,
                 BatchSize = 1000
             });
             var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
             bool areAddedOrdersMerged = true;
             bool areUpdatedOrdersMerged = true;
-            foreach (var newOrder in newOrders.Where(o => o.Id <= 10000).OrderBy(o => o.Id))
+            foreach (var newOrder in newOrders.Where(o => o.Id <= 100 && o.ExternalId != null).OrderBy(o => o.Id))
             {
                 if (newOrder.Price != Convert.ToDecimal(newOrder.Id + .25))
                 {
@@ -305,6 +319,137 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
         }
         [TestMethod]
+        public void BulkSync()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Orders.Count();
+            var orders = dbContext.Orders.Where(o => o.Id <= 10000).OrderBy(o => o.Id).ToList();
+            int ordersToAdd = 5000;
+            int ordersToUpdate = orders.Count;
+            foreach (var order in orders)
+            {
+                order.Price = Convert.ToDecimal(order.Id + .25);
+            }
+            for (int i = 0; i < ordersToAdd; i++)
+            {
+                orders.Add(new Order { Id = 100000 + i, Price = 3.55M });
+            }
+            var result = dbContext.BulkSync(orders);
+            var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
+            bool areAddedOrdersMerged = true;
+            bool areUpdatedOrdersMerged = true;
+            foreach (var newOrder in newOrders.Where(o => o.Id <= 10000).OrderBy(o => o.Id))
+            {
+                if (newOrder.Price != Convert.ToDecimal(newOrder.Id + .25))
+                {
+                    areUpdatedOrdersMerged = false;
+                    break;
+                }
+            }
+            foreach (var newOrder in newOrders.Where(o => o.Id >= 500000).OrderBy(o => o.Id))
+            {
+                if (newOrder.Price != 3.55M)
+                {
+                    areAddedOrdersMerged = false;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(result.RowsAffected == oldTotal + ordersToAdd, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(result.RowsUpdated == ordersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
+            Assert.IsTrue(result.RowsDeleted == oldTotal - orders.Count() + ordersToAdd, "The number of rows deleted must match the difference from the total existing orders to the new orders to add/update");
+            Assert.IsTrue(areAddedOrdersMerged, "The orders that were added did not merge correctly");
+            Assert.IsTrue(areUpdatedOrdersMerged, "The orders that were updated did not merge correctly");
+        }
+        [TestMethod]
+        public void BulkSync_Options_AutoMapIdentity()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Orders.Count();
+            int ordersToUpdate = 3;
+            int ordersToAdd = 2;
+            var orders = new List<Order>
+            {
+                new Order { ExternalId = "id-1", Price=7.10M },
+                new Order { ExternalId = "id-2", Price=9.33M },
+                new Order { ExternalId = "id-3", Price=3.25M },
+                new Order { ExternalId = "id-1000001", Price=2.15M },
+                new Order { ExternalId = "id-1000002", Price=5.75M },
+            };
+            var result = dbContext.BulkSync(orders, new BulkSyncOptions<Order>
+            {
+                MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId,
+                UsePermanentTable = true
+            });
+            bool autoMapIdentityMatched = true;
+            foreach (var order in orders)
+            {
+                if (!dbContext.Orders.Any(o => o.ExternalId == order.ExternalId && o.Id == order.Id && o.Price == order.Price))
+                {
+                    autoMapIdentityMatched = false;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(result.RowsAffected == oldTotal + ordersToAdd, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(result.RowsUpdated == ordersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
+            Assert.IsTrue(result.RowsDeleted == oldTotal - orders.Count() + ordersToAdd, "The number of rows deleted must match the difference from the total existing orders to the new orders to add/update");
+            Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
+        }
+        [TestMethod]
+        public void BulkSync_Options_MergeOnCondition()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int oldTotal = dbContext.Orders.Count();
+            var orders = dbContext.Orders.Where(o => o.Id <= 100 && o.ExternalId != null).OrderBy(o => o.Id).ToList();
+            int ordersToAdd = 50;
+            int ordersToUpdate = orders.Count;
+            foreach (var order in orders)
+            {
+                order.Price = Convert.ToDecimal(order.Id + .25);
+            }
+            for (int i = 0; i < ordersToAdd; i++)
+            {
+                orders.Add(new Order { Id = 100000 + i, Price = 3.55M });
+            }
+            var result = dbContext.BulkSync(orders, new BulkSyncOptions<Order>
+            {
+                MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId,
+                BatchSize = 1000
+            });
+            var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
+            bool areAddedOrdersMerged = true;
+            bool areUpdatedOrdersMerged = true;
+            foreach (var newOrder in newOrders.Where(o => o.Id <= 100 && o.ExternalId != null).OrderBy(o => o.Id))
+            {
+                if (newOrder.Price != Convert.ToDecimal(newOrder.Id + .25))
+                {
+                    areUpdatedOrdersMerged = false;
+                    break;
+                }
+            }
+            foreach (var newOrder in newOrders.Where(o => o.Id >= 500000).OrderBy(o => o.Id))
+            {
+                if (newOrder.Price != 3.55M)
+                {
+                    areAddedOrdersMerged = false;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(result.RowsAffected == oldTotal + ordersToAdd, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(result.RowsUpdated == ordersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
+            Assert.IsTrue(result.RowsDeleted == oldTotal - orders.Count() + ordersToAdd, "The number of rows deleted must match the difference from the total existing orders to the new orders to add/update");
+            Assert.IsTrue(areAddedOrdersMerged, "The orders that were added did not merge correctly");
+            Assert.IsTrue(areUpdatedOrdersMerged, "The orders that were updated did not merge correctly");
+        }
+        [TestMethod]
         public void BulkUpdate()
         {
             TestDbContext dbContext = new TestDbContext();
@@ -323,6 +468,25 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
             Assert.IsTrue(rowsUpdated == orders.Count, "The number of rows updated must match the count of entities that were retrieved");
             Assert.IsTrue(newOrders == rowsUpdated, "The count of new orders must be equal the number of rows updated in the database.");
+            //Assert.IsTrue(entitiesWithChanges == 0, "There should be no pending Order entities with changes after BulkInsert completes");
+        }
+        [TestMethod]
+        public void BulkUpdate_Options_UpdateOnCondition()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).OrderBy(o => o.Id).ToList();
+            foreach (var order in orders)
+            {
+                order.Price = 2.35M;
+            }
+            var oldTotal = dbContext.Orders.Where(o => o.Price == 2.35M).OrderBy(o => o.Id).Count();
+            int rowsUpdated = dbContext.BulkUpdate(orders, new BulkUpdateOptions<Order>() { UpdateOnCondition = (s, t) => s.ExternalId == t.ExternalId });
+            var newTotal = dbContext.Orders.Where(o => o.Price == 2.35M).OrderBy(o => o.Id).Count();
+
+            Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
+            Assert.IsTrue(rowsUpdated == orders.Count, "The number of rows updated must match the count of entities that were retrieved");
+            Assert.IsTrue(newTotal == rowsUpdated + oldTotal, "The count of new orders must be equal the number of rows updated in the database.");
             //Assert.IsTrue(entitiesWithChanges == 0, "There should be no pending Order entities with changes after BulkInsert completes");
         }
         [TestMethod]
