@@ -56,6 +56,8 @@
     <Compile Include="Data\BulkDeleteOptions.cs" />
     <Compile Include="Data\BulkInsertOptions.cs" />
     <Compile Include="Data\BulkInsertResult.cs" />
+    <Compile Include="Data\QueryToFileOptions.cs" />
+    <Compile Include="Data\QueryToFileResult.cs" />
     <Compile Include="Data\BulkSyncResult.cs" />
     <Compile Include="Data\BulkSyncOptions.cs" />
     <Compile Include="Data\BulkMergeOption.cs" />

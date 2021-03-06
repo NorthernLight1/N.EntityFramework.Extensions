@@ -12,6 +12,7 @@ using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Infrastructure.Interception;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -550,6 +551,116 @@ namespace N.EntityFramework.Extensions
                 }
             }
             return rowAffected;
+        }
+        public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath)
+        {
+            return QueryToCsvFile<T>(querable, filePath, new QueryToFileOptions());
+        }
+        public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, Stream stream)
+        {
+            return QueryToCsvFile<T>(querable, stream, new QueryToFileOptions());
+        }
+        public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath, QueryToFileOptions options)
+        {
+            var fileStream = File.Create(filePath);
+            return InternalQueryToFile<T>(querable, fileStream, options);
+        }
+        public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, Stream stream, QueryToFileOptions options)
+        {
+            return InternalQueryToFile<T>(querable, stream, options);
+        }
+        public static QueryToFileResult SqlQueryToCsvFile(this Database database, string filePath, string sqlText, params object[] parameters)
+        {
+            return SqlQueryToCsvFile(database, filePath, new QueryToFileOptions(), sqlText, parameters);
+        }
+        public static QueryToFileResult SqlQueryToCsvFile(this Database database, Stream stream, string sqlText, params object[] parameters)
+        {
+            return SqlQueryToCsvFile(database, stream, new QueryToFileOptions(), sqlText, parameters);
+        }
+        public static QueryToFileResult SqlQueryToCsvFile(this Database database, string filePath, QueryToFileOptions options, string sqlText, params object[] parameters)
+        {
+            var fileStream = File.Create(filePath);
+            return SqlQueryToCsvFile(database, fileStream, options, sqlText, parameters);
+        }
+        public static QueryToFileResult SqlQueryToCsvFile(this Database database, Stream stream, QueryToFileOptions options, string sqlText, params object[] parameters)
+        {
+            var dbConnection = database.Connection as SqlConnection;
+            return InternalQueryToFile(dbConnection, stream, options, sqlText, parameters);
+        }
+        private static QueryToFileResult InternalQueryToFile<T>(this IQueryable<T> querable, Stream stream, QueryToFileOptions options)
+        {
+            var dbQuery = querable as DbQuery<T>;
+            var dbConnection = GetSqlConnectionFromIQuerable(querable);
+            return InternalQueryToFile(dbConnection, stream, options, dbQuery.Sql);
+        }
+        private static QueryToFileResult InternalQueryToFile(SqlConnection dbConnection, Stream stream, QueryToFileOptions options, string sqlText, object[] parameters=null)
+        {
+            int dataRowCount = 0;
+            int totalRowCount=0;
+            long bytesWritten = 0;
+
+            //Open datbase connection
+            if (dbConnection.State == ConnectionState.Closed)
+                dbConnection.Open();
+
+            var command = new SqlCommand(sqlText, dbConnection);
+            if (parameters != null)
+            {
+                command.Parameters.AddRange(parameters);
+            }
+            if (options.CommandTimeout.HasValue)
+            {
+                command.CommandTimeout = options.CommandTimeout.Value;
+            }
+
+            StreamWriter streamWriter = new StreamWriter(stream);
+            using (var reader = command.ExecuteReader())
+            {
+                //Header row
+                if (options.IncludeHeaderRow)
+                {
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        streamWriter.Write(options.TextQualifer);
+                        streamWriter.Write(reader.GetName(i));
+                        streamWriter.Write(options.TextQualifer);
+                        if (i != reader.FieldCount - 1)
+                        {
+                            streamWriter.Write(options.ColumnDelimiter);
+                        }
+                    }
+                    totalRowCount++;
+                    streamWriter.Write(options.RowDelimiter);
+                }
+                //Write data rows to file
+                while (reader.Read())
+                {
+                    Object[] values = new Object[reader.FieldCount];
+                    reader.GetValues(values);
+                    for(int i=0; i<values.Length; i++)
+                    {
+                        streamWriter.Write(options.TextQualifer);
+                        streamWriter.Write(values[i]);
+                        streamWriter.Write(options.TextQualifer);
+                        if(i != values.Length - 1)
+                        {
+                            streamWriter.Write(options.ColumnDelimiter);
+                        }
+                    }
+                    streamWriter.Write(options.RowDelimiter);
+                    dataRowCount++;
+                    totalRowCount++;
+                }
+                streamWriter.Flush();
+                bytesWritten = streamWriter.BaseStream.Length;
+                streamWriter.Close();
+            }
+            return new QueryToFileResult()
+            {
+                BytesWritten = bytesWritten,
+                DataRowCount = dataRowCount,
+                TotalRowCount = totalRowCount
+            };
         }
         public static int UpdateFromQuery<T>(this IQueryable<T> querable, Expression<Func<T, T>> updateExpression)
         {
