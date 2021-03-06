@@ -61,7 +61,22 @@ The framework currently supports the following operations:
   products.Add(new Product { Name="Shirt", Price=20.95M });
   dbcontext.BulkMerge(products);
   ```
-  **Fetch() - Retrieve data in batches**  
+   **BulkSync() - Performs a full sync on the target databse. Any entities that do not exists in the source list will be deleted**
+  ```
+  var dbcontext = new MyDbContext();
+  var products = new List<Product>();
+  var existingProducts = dbcontext.Products.Where(o => o.Id <= 1000);
+  foreach(var product in existingProducts)
+  {
+      product.Price = 6M;
+  }
+  products.AddRange(existingProducts);
+  products.Add(new Product { Name="Hat", Price=10.25M });
+  products.Add(new Product { Name="Shirt", Price=20.95M });
+  //All existing products with Id > 1000 will be deleted
+  dbcontext.BulkSync(products);
+  ```
+  **Fetch() - Retrieves data in batches.**  
   ```
   var dbcontext = new MyDbContext();  
   var query = dbcontext.Products.Where(o => o.Price < 5.35M);
