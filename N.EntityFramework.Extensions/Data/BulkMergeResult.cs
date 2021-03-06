@@ -6,8 +6,9 @@ namespace N.EntityFramework.Extensions
     {
         public IEnumerable<BulkMergeOutputRow<T>> Output { get; set; }
         public int RowsAffected { get; set; }
-        public int RowsDeleted { get; internal set; }
+        internal virtual int RowsDeleted { get; set; }
         public int RowsInserted { get; internal set; }
         public int RowsUpdated { get; internal set; }
+
     }
 }

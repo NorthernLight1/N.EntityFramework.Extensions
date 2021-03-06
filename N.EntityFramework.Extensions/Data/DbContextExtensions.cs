@@ -199,13 +199,23 @@ namespace N.EntityFramework.Extensions
                 EntityMap = dataReader.EntityMap
             };
         }
-
         public static BulkMergeResult<T> BulkMerge<T>(this DbContext context, IEnumerable<T> entities)
         {
             return BulkMerge(context, entities, new BulkMergeOptions<T>());
         }
-
         public static BulkMergeResult<T> BulkMerge<T>(this DbContext context, IEnumerable<T> entities, BulkMergeOptions<T> options)
+        {
+            return InternalBulkMerge(context, entities, options);
+        }
+        public static BulkSyncResult<T> BulkSync<T>(this DbContext context, IEnumerable<T> entities)
+        {
+            return BulkSync(context, entities, new BulkSyncOptions<T>());
+        }
+        public static BulkSyncResult<T> BulkSync<T>(this DbContext context, IEnumerable<T> entities, BulkSyncOptions<T> options)
+        {
+            return BulkSyncResult<T>.Map(InternalBulkMerge(context, entities, options));
+        }
+        private static BulkMergeResult<T> InternalBulkMerge<T>(this DbContext context, IEnumerable<T> entities, BulkMergeOptions<T> options)
         {
             int rowsAffected = 0;
             var outputRows = new List<BulkMergeOutputRow<T>>();
@@ -232,47 +242,57 @@ namespace N.EntityFramework.Extensions
 
                     IEnumerable<string> columnsToInsert = columnNames.Where(o => !options.GetIgnoreColumnsOnInsert().Contains(o));
                     IEnumerable<string> columnstoUpdate = columnNames.Where(o => !options.GetIgnoreColumnsOnUpdate().Contains(o)).Select(o => string.Format("t.{0}=s.{0}", o));
-                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}","s", Constants.Guid_ColumnName) };
+                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.Guid_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
                     Type entityType = typeof(T);
 
                     foreach (var storeGeneratedColumnName in storeGeneratedColumnNames)
                     {
-                        //columnsToOutput.Add(string.Format("deleted.[{0}]", storeGeneratedColumnName)); Not Yet Supported
                         columnsToOutput.Add(string.Format("inserted.[{0}]", storeGeneratedColumnName));
+                        columnsToOutput.Add(string.Format("deleted.[{0}]", storeGeneratedColumnName));
                         var storedGeneratedColumn = tableMapping.Columns.First(o => o.Column.Name == storeGeneratedColumnName);
                         propertySetters.Add(entityType.GetProperty(storeGeneratedColumnName));
                     }
 
-                    string mergeSqlText = string.Format("MERGE {0} t USING {1} s ON ({2}) WHEN NOT MATCHED BY TARGET THEN INSERT ({3}) VALUES ({3}) WHEN MATCHED THEN UPDATE SET {4} OUTPUT {5};",
-                        destinationTableName, stagingTableName, CommonUtil<T>.GetJoinConditionSql(options.MergeOnCondition,storeGeneratedColumnNames, "s", "t"),
+                    string mergeSqlText = string.Format("MERGE {0} t USING {1} s ON ({2}) WHEN NOT MATCHED BY TARGET THEN INSERT ({3}) VALUES ({3}) WHEN MATCHED THEN UPDATE SET {4}{5}OUTPUT {6};",
+                        destinationTableName, stagingTableName, CommonUtil<T>.GetJoinConditionSql(options.MergeOnCondition, storeGeneratedColumnNames, "s", "t"),
                         SqlUtil.ConvertToColumnString(columnsToInsert),
                         SqlUtil.ConvertToColumnString(columnstoUpdate),
+                        options.DeleteIfNotMatched ? " WHEN NOT MATCHED BY SOURCE THEN DELETE " : " ",
                         SqlUtil.ConvertToColumnString(columnsToOutput)
                         );
 
                     var bulkQueryResult = context.BulkQuery(mergeSqlText, dbConnection, transaction, options);
                     rowsAffected = bulkQueryResult.RowsAffected;
 
-                    //var entitiesEnumerator = entities.GetEnumerator();
-                    //entitiesEnumerator.MoveNext();
                     foreach (var result in bulkQueryResult.Results)
                     {
+                        string id = string.Empty;
+                        object entity = null;
                         string action = (string)result[0];
-                        int id = (int)result[1];
-                        var entity = bulkInsertResult.EntityMap[id];
-                        outputRows.Add(new BulkMergeOutputRow<T>(action, entity));
-                        if (options.AutoMapOutputIdentity && entity != null)
+                        if (action != SqlMergeAction.Delete)
                         {
-                            
-                            for (int i = 2; i < result.Length; i++)
+                            int entityId = (int)result[1];
+                            id = Convert.ToString(result[2]);
+                            entity = bulkInsertResult.EntityMap[entityId];
+                            if (options.AutoMapOutputIdentity && entity != null)
                             {
-                                propertySetters[0].SetValue(entity, result[i]);
+
+                                for (int i = 2; i < 2 + storeGeneratedColumnNames.Length; i++)
+                                {
+                                    propertySetters[0].SetValue(entity, result[i]);
+                                }
                             }
                         }
+                        else
+                        {
+                            id = Convert.ToString(result[2+storeGeneratedColumnNames.Length]);
+                        }
+                        outputRows.Add(new BulkMergeOutputRow<T>(action, id));
+
                         if (action == SqlMergeAction.Insert) rowsInserted++;
                         else if (action == SqlMergeAction.Update) rowsUpdated++;
-                        else if (action == SqlMergeAction.Detete) rowsDeleted++;
+                        else if (action == SqlMergeAction.Delete) rowsDeleted++;
                     }
                     SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
 
