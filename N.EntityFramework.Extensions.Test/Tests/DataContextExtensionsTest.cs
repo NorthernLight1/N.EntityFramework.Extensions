@@ -4,6 +4,7 @@ using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -552,6 +553,60 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(oldSourceTotal == newSourceTotal, "There should not be any change in the count of rows in the source table");
             Assert.IsTrue(rowsInserted == oldSourceTotal, "The number of records inserted  must match the count of the source table");
             //Assert.IsTrue(rowsInserted == newTargetTotal, "The different in count in the target table before and after the insert must match the total row inserted");
+        }
+        [TestMethod]
+        public void QueryToCsvFile()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            var query = dbContext.Orders.Where(o => o.Price < 10M);
+            int count = query.Count();
+            var queryToCsvFileResult = query.QueryToCsvFile("QueryToCsvFile-Test.csv");
+
+            Assert.IsTrue(count > 0, "There should be existing data in the source table");
+            Assert.IsTrue(queryToCsvFileResult.DataRowCount == count, "The number of data rows written to the file should match the count from the database");
+            Assert.IsTrue(queryToCsvFileResult.TotalRowCount == count + 1, "The total number of rows written to the file should match the count from the database plus the header row");
+        }
+        [TestMethod]
+        public void QueryToCsvFile_FileStream()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            var query = dbContext.Orders.Where(o => o.Price < 10M);
+            int count = query.Count();
+            var fileStream = File.Create("QueryToCsvFile_Stream-Test.csv");
+            var queryToCsvFileResult = query.QueryToCsvFile(fileStream);
+
+            Assert.IsTrue(count > 0, "There should be existing data in the source table");
+            Assert.IsTrue(queryToCsvFileResult.DataRowCount == count, "The number of data rows written to the file should match the count from the database");
+            Assert.IsTrue(queryToCsvFileResult.TotalRowCount == count + 1, "The total number of rows written to the file should match the count from the database plus the header row");
+        }
+        [TestMethod]
+        public void SqlQueryToCsvFile()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            int count = dbContext.Orders.Where(o => o.Price > 5M).Count();
+            var queryToCsvFileResult = dbContext.Database.SqlQueryToCsvFile("SqlQueryToCsvFile-Test.csv", "SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
+
+            Assert.IsTrue(count > 0, "There should be existing data in the source table");
+            Assert.IsTrue(queryToCsvFileResult.DataRowCount == count, "The number of data rows written to the file should match the count from the database");
+            Assert.IsTrue(queryToCsvFileResult.TotalRowCount == count + 1, "The total number of rows written to the file should match the count from the database plus the header row");
+        }
+        [TestMethod]
+        public void SqlQueryToCsvFile_Options_ColumnDelimiter_TextQualifer()
+        {
+            TestDbContext dbContext = new TestDbContext();
+            SetupData(dbContext, true);
+            string filePath = "SqlQueryToCsvFile_Options_ColumnDelimiter_TextQualifer-Test.csv";
+            int count = dbContext.Orders.Where(o => o.Price > 5M).Count();
+            dbContext.Database.SqlQuery<object>("SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
+            var queryToCsvFileResult = dbContext.Database.SqlQueryToCsvFile(filePath, new QueryToFileOptions { ColumnDelimiter = "|", TextQualifer="\"" }, 
+                "SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
+
+            Assert.IsTrue(count > 0, "There should be existing data in the source table");
+            Assert.IsTrue(queryToCsvFileResult.DataRowCount == count, "The number of data rows written to the file should match the count from the database");
+            Assert.IsTrue(queryToCsvFileResult.TotalRowCount == count + 1, "The total number of rows written to the file should match the count from the database plus the header row");
         }
         [TestMethod]
         public void UpdateFromQuery()
