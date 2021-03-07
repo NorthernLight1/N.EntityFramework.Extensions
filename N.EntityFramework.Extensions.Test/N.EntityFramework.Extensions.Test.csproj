@@ -64,7 +64,7 @@
     <Compile Include="Data\TestDbConfiguration.cs" />
     <Compile Include="Data\TestDbContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tests\DataContextExtensionsTest.cs" />
+    <Compile Include="Tests\DbContextExtensionsTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
