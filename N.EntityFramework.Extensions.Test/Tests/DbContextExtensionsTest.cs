@@ -54,7 +54,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).ToList();
-            int rowsDeleted = dbContext.BulkDelete(orders, new BulkDeleteOptions<Order> { DeleteOnCondition = (s, t) => s.ExternalId == t.ExternalId, UsePermanentTable=true  });
+            int rowsDeleted = dbContext.BulkDelete(orders, options => { options.DeleteOnCondition = (s, t) => s.ExternalId == t.ExternalId; options.UsePermanentTable = true;  });
             int newTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
 
             Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price < $2)");
@@ -132,11 +132,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 orders.Add(new Order { Id = i, Price = 1.57M });
             }
             int oldTotal = dbContext.Orders.Count();
-            int rowsInserted = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>()
-            {
-                KeepIdentity = true,
-                BatchSize = 1000,
-            });
+            int rowsInserted = dbContext.BulkInsert(orders, options => { options.KeepIdentity = true; options.BatchSize = 1000; });
             var oldOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
             var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
             bool allIdentityFieldsMatch = true;
@@ -244,11 +240,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             {
                 orders.Add(new Order { Id = 100000 + i, Price = 3.55M });
             }
-            var result = dbContext.BulkMerge(orders, new BulkMergeOptions<Order>
-            {
-                MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId,
-                BatchSize = 1000
-            });
+            var result = dbContext.BulkMerge(orders, options => { options.MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId; options.BatchSize = 1000; });
             var newOrders = dbContext.Orders.OrderBy(o => o.Id).ToList();
             bool areAddedOrdersMerged = true;
             bool areUpdatedOrdersMerged = true;
@@ -368,11 +360,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 new Order { ExternalId = "id-1000001", Price=2.15M },
                 new Order { ExternalId = "id-1000002", Price=5.75M },
             };
-            var result = dbContext.BulkSync(orders, new BulkSyncOptions<Order>
-            {
-                MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId,
-                UsePermanentTable = true
-            });
+            var result = dbContext.BulkSync(orders, options => { options.MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId; options.UsePermanentTable = true; });
             bool autoMapIdentityMatched = true;
             foreach (var order in orders)
             {
@@ -467,7 +455,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 order.Price = 2.35M;
             }
             var oldTotal = dbContext.Orders.Where(o => o.Price == 2.35M).OrderBy(o => o.Id).Count();
-            int rowsUpdated = dbContext.BulkUpdate(orders, new BulkUpdateOptions<Order>() { UpdateOnCondition = (s, t) => s.ExternalId == t.ExternalId });
+            int rowsUpdated = dbContext.BulkUpdate(orders, options =>  { options.UpdateOnCondition = (s, t) => s.ExternalId == t.ExternalId; });
             var newTotal = dbContext.Orders.Where(o => o.Price == 2.35M).OrderBy(o => o.Id).Count();
 
             Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
@@ -513,7 +501,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             {
                 batchCount++;
                 totalCount += result.Results.Count();
-            }, new FetchOptions { BatchSize = 1000 });
+            }, options => { options.BatchSize = 1000; });
 
             Assert.IsTrue(expectedTotalCount > 0, "There must be orders in database that match this condition");
             Assert.IsTrue(expectedTotalCount == totalCount, "The total number of rows fetched must match the count of existing rows in database");
@@ -548,6 +536,18 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(queryToCsvFileResult.TotalRowCount == count + 1, "The total number of rows written to the file should match the count from the database plus the header row");
         }
         [TestMethod]
+        public void QueryToCsvFile_Options_ColumnDelimiter_TextQualifer_HeaderRow()
+        {
+            var dbContext = SetupDbContext(true);
+            var query = dbContext.Orders.Where(o => o.Price < 10M);
+            int count = query.Count();
+            var queryToCsvFileResult = query.QueryToCsvFile("QueryToCsvFile_Options_ColumnDelimiter_TextQualifer_HeaderRow-Test.csv", options => { options.ColumnDelimiter = "|"; options.TextQualifer = "\""; options.IncludeHeaderRow = false; });
+
+            Assert.IsTrue(count > 0, "There should be existing data in the source table");
+            Assert.IsTrue(queryToCsvFileResult.DataRowCount == count, "The number of data rows written to the file should match the count from the database");
+            Assert.IsTrue(queryToCsvFileResult.TotalRowCount == count, "The total number of rows written to the file should match the count from the database without any header row");
+        }
+        [TestMethod]
         public void QueryToCsvFile_FileStream()
         {
             var dbContext = SetupDbContext(true);
@@ -578,7 +578,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             string filePath = "SqlQueryToCsvFile_Options_ColumnDelimiter_TextQualifer-Test.csv";
             int count = dbContext.Orders.Where(o => o.Price > 5M).Count();
             dbContext.Database.SqlQuery<object>("SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
-            var queryToCsvFileResult = dbContext.Database.SqlQueryToCsvFile(filePath, new QueryToFileOptions { ColumnDelimiter = "|", TextQualifer="\"" }, 
+            var queryToCsvFileResult = dbContext.Database.SqlQueryToCsvFile(filePath, options => { options.ColumnDelimiter = "|"; options.TextQualifer = "\""; }, 
                 "SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
 
             Assert.IsTrue(count > 0, "There should be existing data in the source table");
@@ -694,8 +694,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         }
         private TestDbContext SetupDbContext(bool populateData)
         {
-            var objectContext = new TestObjectContext();
-            TestDbContext dbContext = new TestDbContext(objectContext);
+            TestDbContext dbContext = new TestDbContext();
             dbContext.Orders.DeleteFromQuery();
             dbContext.Articles.DeleteFromQuery();
             if (populateData)

@@ -1,4 +1,5 @@
 ﻿using N.EntityFramework.Extensions.Common;
+using N.EntityFramework.Extensions.Extensions;
 using N.EntityFramework.Extensions.Sql;
 using N.EntityFramework.Extensions.Util;
 using System;
@@ -31,6 +32,10 @@ namespace N.EntityFramework.Extensions
         public static int BulkDelete<T>(this DbContext context, IEnumerable<T> entities)
         {
             return context.BulkDelete(entities, new BulkDeleteOptions<T>());
+        }
+        public static int BulkDelete<T>(this DbContext context, IEnumerable<T> entities, Action<BulkDeleteOptions<T>> optionsAction)
+        {
+            return context.BulkDelete(entities, optionsAction.Build());
         }
         public static int BulkDelete<T>(this DbContext context, IEnumerable<T> entities, BulkDeleteOptions<T> options)
         {
@@ -79,12 +84,14 @@ namespace N.EntityFramework.Extensions
                 throw new Exception("You must have a primary key on this table to use this function.");
             }
         }
-
         public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities)
         {
-            return context.BulkInsert<T>(entities, new BulkInsertOptions<T> { });
+            return context.BulkInsert<T>(entities, new BulkInsertOptions<T>());
         }
-
+        public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities, Action<BulkInsertOptions<T>> optionsAction)
+        {
+            return context.BulkInsert<T>(entities, optionsAction.Build());
+        }
         public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities, BulkInsertOptions<T> options)
         {
             int rowsAffected = 0;
@@ -208,9 +215,17 @@ namespace N.EntityFramework.Extensions
         {
             return InternalBulkMerge(context, entities, options);
         }
+        public static BulkMergeResult<T> BulkMerge<T>(this DbContext context, IEnumerable<T> entities, Action<BulkMergeOptions<T>> optionsAction)
+        {
+            return BulkMerge(context, entities, optionsAction.Build());
+        }
         public static BulkSyncResult<T> BulkSync<T>(this DbContext context, IEnumerable<T> entities)
         {
             return BulkSync(context, entities, new BulkSyncOptions<T>());
+        }
+        public static BulkSyncResult<T> BulkSync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkSyncOptions<T>> optionsAction)
+        {
+            return BulkSyncResult<T>.Map(InternalBulkMerge(context, entities, optionsAction.Build()));
         }
         public static BulkSyncResult<T> BulkSync<T>(this DbContext context, IEnumerable<T> entities, BulkSyncOptions<T> options)
         {
@@ -324,6 +339,10 @@ namespace N.EntityFramework.Extensions
         {
             return BulkUpdate<T>(context, entities, new BulkUpdateOptions<T>());
         }
+        public static int BulkUpdate<T>(this DbContext context, IEnumerable<T> entities, Action<BulkUpdateOptions<T>> optionsAction)
+        {
+            return BulkUpdate<T>(context, entities, optionsAction.Build());
+        }
         public static int BulkUpdate<T>(this DbContext context, IEnumerable<T> entities, BulkUpdateOptions<T> options)
         {
             int rowsUpdated = 0;
@@ -370,6 +389,10 @@ namespace N.EntityFramework.Extensions
 
                 return rowsUpdated;
             }
+        }
+        public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, Action<FetchOptions> optionsAction) where T : class, new()
+        {
+            Fetch(querable, action, optionsAction.Build());
         }
         public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions options) where T : class, new()
         {
@@ -560,10 +583,18 @@ namespace N.EntityFramework.Extensions
         {
             return QueryToCsvFile<T>(querable, stream, new QueryToFileOptions());
         }
+        public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath, Action<QueryToFileOptions> optionsAction)
+        {
+            return QueryToCsvFile<T>(querable, filePath, optionsAction.Build());
+        }
+        public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, Stream stream, Action<QueryToFileOptions> optionsAction)
+        {
+            return QueryToCsvFile<T>(querable, stream, optionsAction.Build());
+        }
         public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath, QueryToFileOptions options)
         {
             var fileStream = File.Create(filePath);
-            return InternalQueryToFile<T>(querable, fileStream, options);
+            return QueryToCsvFile<T>(querable, fileStream, options);
         }
         public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, Stream stream, QueryToFileOptions options)
         {
@@ -576,6 +607,14 @@ namespace N.EntityFramework.Extensions
         public static QueryToFileResult SqlQueryToCsvFile(this Database database, Stream stream, string sqlText, params object[] parameters)
         {
             return SqlQueryToCsvFile(database, stream, new QueryToFileOptions(), sqlText, parameters);
+        }
+        public static QueryToFileResult SqlQueryToCsvFile(this Database database, string filePath, Action<QueryToFileOptions> optionsAction, string sqlText, params object[] parameters)
+        {
+            return SqlQueryToCsvFile(database, filePath, optionsAction.Build(), sqlText, parameters);
+        }
+        public static QueryToFileResult SqlQueryToCsvFile(this Database database, Stream stream, Action<QueryToFileOptions> optionsAction, string sqlText, params object[] parameters)
+        {
+            return SqlQueryToCsvFile(database, stream, optionsAction.Build(), sqlText, parameters);
         }
         public static QueryToFileResult SqlQueryToCsvFile(this Database database, string filePath, QueryToFileOptions options, string sqlText, params object[] parameters)
         {

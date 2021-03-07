@@ -74,6 +74,7 @@
     <Compile Include="Data\FetchResult.cs" />
     <Compile Include="Data\SqlMergeAction.cs" />
     <Compile Include="Enums\EfExtensionsCommandType.cs" />
+    <Compile Include="Extensions\CommonExtensions.cs" />
     <Compile Include="Extensions\LinqExtensions.cs" />
     <Compile Include="Sql\SqlClause.cs" />
     <Compile Include="Sql\SqlQuery.cs" />
