@@ -14,7 +14,7 @@ using N.EntityFramework.Extensions.Test.Data;
 namespace N.EntityFramework.Extensions.Test.Tests
 {
     [TestClass]
-    public class DataContextExtensionsTest
+    public class DbContextExtensionsTest
     {
         //[TestMethod]
         //public void TestBulkInsert_EF_CustomTable()
@@ -39,8 +39,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkDelete()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M).ToList();
             int rowsDeleted = dbContext.BulkDelete(orders);
             int newTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
@@ -52,8 +51,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkDelete_Options_DeleteOnCondition()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).ToList();
             int rowsDeleted = dbContext.BulkDelete(orders, new BulkDeleteOptions<Order> { DeleteOnCondition = (s, t) => s.ExternalId == t.ExternalId, UsePermanentTable=true  });
@@ -66,8 +64,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkInsert()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, false);
+            var dbContext = SetupDbContext(false);
             var orders = new List<Order>();
             for (int i = 0; i < 20000; i++)
             {
@@ -83,8 +80,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkInsert_Without_Identity_Column()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var articles = new List<Article>();
             for (int i = 0; i < 20000; i++)
             {
@@ -100,8 +96,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkInsert_Options_AutoMapIdentity()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var orders = new List<Order>
             {
                 new Order { ExternalId = "id-1", Price=7.10M },
@@ -130,8 +125,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkInsert_Options_KeepIdentity()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, false);
+            var dbContext = SetupDbContext(false);
             var orders = new List<Order>();
             for (int i = 0; i < 20000; i++)
             {
@@ -175,8 +169,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkInsert_Options_InsertIfNotExists()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var orders = new List<Order>();
             long maxId = dbContext.Orders.Max(o => o.Id);
             long expectedRowsInserted = 1000;
@@ -197,8 +190,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkMerge()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Id <= 10000).OrderBy(o => o.Id).ToList();
             int ordersToAdd = 5000;
             int ordersToUpdate = orders.Count;
@@ -240,8 +232,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkMerge_Options_MergeOnCondition()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Id <= 100 && o.ExternalId != null).OrderBy(o => o.Id).ToList();
             int ordersToAdd = 50;
             int ordersToUpdate = orders.Count;
@@ -287,8 +278,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkMerge_Options_AutoMapIdentity()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int ordersToUpdate = 3;
             int ordersToAdd = 2;
             var orders = new List<Order>
@@ -322,8 +312,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkSync()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Count();
             var orders = dbContext.Orders.Where(o => o.Id <= 10000).OrderBy(o => o.Id).ToList();
             int ordersToAdd = 5000;
@@ -367,8 +356,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkSync_Options_AutoMapIdentity()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Count();
             int ordersToUpdate = 3;
             int ordersToAdd = 2;
@@ -404,8 +392,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkSync_Options_MergeOnCondition()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Count();
             var orders = dbContext.Orders.Where(o => o.Id <= 100 && o.ExternalId != null).OrderBy(o => o.Id).ToList();
             int ordersToAdd = 50;
@@ -453,8 +440,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkUpdate()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M).OrderBy(o => o.Id).ToList();
             long maxId = 0;
             foreach (var order in orders)
@@ -474,8 +460,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkUpdate_Options_UpdateOnCondition()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).OrderBy(o => o.Id).ToList();
             foreach (var order in orders)
             {
@@ -493,8 +478,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void DeleteFromQuery_IQuerable()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
             int rowsDeleted = dbContext.Orders.Where(o => o.Price <= 10).DeleteFromQuery();
             int newTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
@@ -506,8 +490,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void DeleteFromQuery_IEnumerable()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Count();
             int rowsDeleted = dbContext.Orders.DeleteFromQuery();
             int newTotal = dbContext.Orders.Count();
@@ -519,8 +502,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void Fetch()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int batchSize = 1000;
             int batchCount = 0;
             int totalCount = 0;
@@ -540,8 +522,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void InsertFromQuery()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             string tableName = "OrdersUnderTen";
             int oldSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             //int oldTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
@@ -557,8 +538,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void QueryToCsvFile()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var query = dbContext.Orders.Where(o => o.Price < 10M);
             int count = query.Count();
             var queryToCsvFileResult = query.QueryToCsvFile("QueryToCsvFile-Test.csv");
@@ -570,8 +550,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void QueryToCsvFile_FileStream()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             var query = dbContext.Orders.Where(o => o.Price < 10M);
             int count = query.Count();
             var fileStream = File.Create("QueryToCsvFile_Stream-Test.csv");
@@ -584,8 +563,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void SqlQueryToCsvFile()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int count = dbContext.Orders.Where(o => o.Price > 5M).Count();
             var queryToCsvFileResult = dbContext.Database.SqlQueryToCsvFile("SqlQueryToCsvFile-Test.csv", "SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
 
@@ -596,8 +574,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void SqlQueryToCsvFile_Options_ColumnDelimiter_TextQualifer()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             string filePath = "SqlQueryToCsvFile_Options_ColumnDelimiter_TextQualifer-Test.csv";
             int count = dbContext.Orders.Where(o => o.Price > 5M).Count();
             dbContext.Database.SqlQuery<object>("SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
@@ -611,8 +588,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void UpdateFromQuery()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             int rowUpdated = dbContext.Orders.Where(o => o.Price < 10M).UpdateFromQuery(o => new Order { Price = 25.30M });
             int newTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
@@ -627,8 +603,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         public void UpdateFromQuery_With_Different_Culture()
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("sv-SE");
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             int rowUpdated = dbContext.Orders.Where(o => o.Price < 10M).UpdateFromQuery(o => new Order { Price = 25.30M });
             int newTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
@@ -643,8 +618,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void UpdateFromQuery_With_Null_Value()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.ExternalId != null).Count();
             int rowUpdated = dbContext.Orders.Where(o => o.ExternalId != null).UpdateFromQuery(o => new Order { ExternalId = null });
             int newTotal = dbContext.Orders.Where(o => o.ExternalId != null).Count();
@@ -656,8 +630,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void UpdateFromQuery_With_Boolean_Value()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Articles.Count(a => a.OutOfStock);
             int rowUpdated = dbContext.Articles.Where(a => a.OutOfStock).UpdateFromQuery(a => new Article { OutOfStock = false });
             int newTotal = dbContext.Articles.Count(o => o.OutOfStock);
@@ -669,8 +642,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void UpdateFromQuery_With_Expression()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             decimal priceStart = 10M;
             decimal priceUpdate = 0.34M;
 
@@ -686,8 +658,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void UpdateFromQuery_With_Expression_Accessing_Previous_Value_Fails()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             decimal priceUpdate = 0.34M;
 
             // Access to previous value creates an exception as the value must be present when we create the SQL code.
@@ -697,8 +668,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void UpdateFromQuery_With_String_Containing_Apostrophe()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.ExternalId == null).Count();
             int rowUpdated = dbContext.Orders.Where(o => o.ExternalId == null).UpdateFromQuery(o => new Order { ExternalId = "inv'alid" });
             int newTotal = dbContext.Orders.Where(o => o.ExternalId == null).Count();
@@ -710,8 +680,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void UpdateFromQuery_With_DateTime()
         {
-            TestDbContext dbContext = new TestDbContext();
-            SetupData(dbContext, true);
+            var dbContext = SetupDbContext(true);
 
             var now = DateTime.Now;
 
@@ -723,10 +692,12 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Updated == null)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
-        private void SetupData(TestDbContext dbcontext, bool populateData)
+        private TestDbContext SetupDbContext(bool populateData)
         {
-            dbcontext.Orders.DeleteFromQuery();
-            dbcontext.Articles.DeleteFromQuery();
+            var objectContext = new TestObjectContext();
+            TestDbContext dbContext = new TestDbContext(objectContext);
+            dbContext.Orders.DeleteFromQuery();
+            dbContext.Articles.DeleteFromQuery();
             if (populateData)
             {
                 var orders = new List<Order>();
@@ -758,7 +729,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 }
 
                 Debug.WriteLine("Last Id for Order is {0}", id);
-                dbcontext.BulkInsert(orders, new BulkInsertOptions<Order>() { KeepIdentity = true });
+                dbContext.BulkInsert(orders, new BulkInsertOptions<Order>() { KeepIdentity = true });
                 var articles = new List<Article>();
                 id = 1;
                 for (int i = 0; i < 2050; i++)
@@ -773,8 +744,9 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 }
 
                 Debug.WriteLine("Last Id for Article is {0}", id);
-                dbcontext.BulkInsert(articles, new BulkInsertOptions<Article>() { KeepIdentity = false, AutoMapOutputIdentity = false });
+                dbContext.BulkInsert(articles, new BulkInsertOptions<Article>() { KeepIdentity = false, AutoMapOutputIdentity = false });
             }
+            return dbContext;
         }
     }
 }
