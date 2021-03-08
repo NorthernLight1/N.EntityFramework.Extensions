@@ -7,21 +7,21 @@ namespace N.EntityFramework.Extensions
 {
     internal static class SqlUtil
     {
-        internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, BulkOptions options)
+        internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, int? commandTimeout=null)
         {
             var sqlCommand = new SqlCommand(query, connection, transaction);
-            if (options?.CommandTimeout.HasValue ?? false)
+            if (commandTimeout.HasValue)
             {
-                sqlCommand.CommandTimeout = options.CommandTimeout.Value;
+                sqlCommand.CommandTimeout = commandTimeout.Value;
             }
             return sqlCommand.ExecuteNonQuery();
         }
-        internal static object ExecuteScalar(string query, SqlConnection connection, SqlTransaction transaction, BulkOptions options)
+        internal static object ExecuteScalar(string query, SqlConnection connection, SqlTransaction transaction, int? commandTimeout = null)
         {
             var sqlCommand = new SqlCommand(query, connection, transaction);
-            if (options?.CommandTimeout.HasValue ?? false)
+            if (commandTimeout.HasValue)
             {
-                sqlCommand.CommandTimeout = options.CommandTimeout.Value;
+                sqlCommand.CommandTimeout = commandTimeout.Value;
             }
             return sqlCommand.ExecuteScalar();
         }
