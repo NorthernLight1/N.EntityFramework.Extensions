@@ -8,7 +8,7 @@
     <owners>Northern25</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
 	<projectUrl>https://github.com/NorthernLight1/N.EntityFramework.Extensions/</projectUrl>
-    <description>Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile.</description>
+    <description>Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile.</description>
     <copyright>Copyright ©  2021</copyright>
 	<tags>EntityFramework Extensions</tags>
     <dependencies>
