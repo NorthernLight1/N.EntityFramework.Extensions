@@ -13,7 +13,7 @@
 	<tags>EntityFramework Extensions</tags>
     <dependencies>
 	   <group targetFramework=".NETFramework4.5">
-		 <dependency id="EntityFramework" version="6.4.4" />
+		 <dependency id="EntityFramework" version="6.2.0" />
       </group>
     </dependencies>
   </metadata>

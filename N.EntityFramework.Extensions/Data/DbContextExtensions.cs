@@ -781,7 +781,7 @@ namespace N.EntityFramework.Extensions
             {
                 var dbQuery = querable as DbQuery<T>;
                 var internalQuery = querable.GetPrivateFieldValue("InternalQuery");
-                var context = internalQuery.GetPrivateFieldValue("InternalContext");
+                var context = internalQuery.GetPrivateFieldValue("_internalContext");
                 dbConnection = context.GetPrivateFieldValue("Connection") as SqlConnection;
             }
             catch(Exception ex)
