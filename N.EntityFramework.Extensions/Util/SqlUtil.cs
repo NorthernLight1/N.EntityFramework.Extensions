@@ -7,22 +7,26 @@ namespace N.EntityFramework.Extensions
 {
     internal static class SqlUtil
     {
-        internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, int? commandTimeout=null)
+        internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, int? commandTimeout = null)
+        {
+            return SqlUtil.ExecuteSql(query, connection, transaction, null, commandTimeout);
+        }
+        internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, object[] parameters = null, int? commandTimeout=null)
         {
             var sqlCommand = new SqlCommand(query, connection, transaction);
             if (commandTimeout.HasValue)
-            {
                 sqlCommand.CommandTimeout = commandTimeout.Value;
-            }
+            if (parameters != null)
+                sqlCommand.Parameters.AddRange(parameters);
             return sqlCommand.ExecuteNonQuery();
         }
-        internal static object ExecuteScalar(string query, SqlConnection connection, SqlTransaction transaction, int? commandTimeout = null)
+        internal static object ExecuteScalar(string query, SqlConnection connection, SqlTransaction transaction, object[] parameters = null, int? commandTimeout = null)
         {
             var sqlCommand = new SqlCommand(query, connection, transaction);
             if (commandTimeout.HasValue)
-            {
                 sqlCommand.CommandTimeout = commandTimeout.Value;
-            }
+            if(parameters != null)
+                sqlCommand.Parameters.AddRange(parameters);
             return sqlCommand.ExecuteScalar();
         }
         internal static int DeleteTable(string tableName, SqlConnection connection, SqlTransaction transaction)

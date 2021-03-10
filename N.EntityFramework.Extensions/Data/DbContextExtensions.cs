@@ -511,7 +511,7 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
+                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql);
                     sqlQuery.ChangeToDelete("[Extent1]");
                     rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
                     dbTransaction.Commit();
@@ -545,7 +545,7 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
+                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql);
                     if (SqlUtil.TableExists(tableName, dbConnection, dbTransaction))
                     {
                         sqlQuery.ChangeToInsert(tableName, insertObjectExpression);
@@ -572,6 +572,11 @@ namespace N.EntityFramework.Extensions
                 }
             }
             return rowAffected;
+        }
+        public static SqlQuery FromSqlQuery(this Database database, string sqlText, params object[] parameters)
+        { 
+            var dbConnection = database.Connection as SqlConnection;
+            return new SqlQuery(dbConnection, sqlText, parameters);
         }
         public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath)
         {
@@ -716,7 +721,7 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    var sqlQuery = SqlQuery.Parse(dbQuery.Sql);
+                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql);
                     string setSqlExpression = updateExpression.ToSqlUpdateSetExpression("Extent1");
                     sqlQuery.ChangeToUpdate("[Extent1]", setSqlExpression);
                     rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
