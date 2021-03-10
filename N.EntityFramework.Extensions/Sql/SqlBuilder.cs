@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace N.EntityFramework.Extensions.Sql
 {
-    class SqlQuery
+    internal class SqlBuilder
     {
         private static IEnumerable<string> keywords = new string[] { "SELECT", "FROM", "WHERE" };
         public string Sql
@@ -16,7 +16,7 @@ namespace N.EntityFramework.Extensions.Sql
             get { return this.ToString(); }
         }
         public List<SqlClause> Clauses { get; private set; }
-        private SqlQuery(string sql)
+        private SqlBuilder(string sql)
         {
             Clauses = new List<SqlClause>();
             Initialize(sql);
@@ -68,9 +68,9 @@ namespace N.EntityFramework.Extensions.Sql
 
             return value;
         }
-        public static SqlQuery Parse(string sql)
+        public static SqlBuilder Parse(string sql)
         {
-            return new SqlQuery(sql);
+            return new SqlBuilder(sql);
         }
         public void ChangeToDelete(string expression)
         {

@@ -73,11 +73,12 @@
     <Compile Include="Data\FetchOptions.cs" />
     <Compile Include="Data\FetchResult.cs" />
     <Compile Include="Data\SqlMergeAction.cs" />
+    <Compile Include="Data\SqlQuery.cs" />
     <Compile Include="Enums\EfExtensionsCommandType.cs" />
     <Compile Include="Extensions\CommonExtensions.cs" />
     <Compile Include="Extensions\LinqExtensions.cs" />
     <Compile Include="Sql\SqlClause.cs" />
-    <Compile Include="Sql\SqlQuery.cs" />
+    <Compile Include="Sql\SqlBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\CommonUtil.cs" />
     <Compile Include="Util\SqlUtil.cs" />

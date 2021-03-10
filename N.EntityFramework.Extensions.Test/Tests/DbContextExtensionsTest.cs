@@ -692,6 +692,17 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Updated == null)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
+        [TestMethod]
+        public void FromSqlQuery_Count()
+        {
+            var dbContext = SetupDbContext(true);
+            int efCount = dbContext.Orders.Where(o => o.Price > 5M).Count();
+            var sqlCount = dbContext.Database.FromSqlQuery("SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M)).Count();
+
+            Assert.IsTrue(efCount > 0, "Count from EF should be greater than zero");
+            Assert.IsTrue(efCount > 0, "Count from SQL should be greater than zero");
+            Assert.IsTrue(efCount == sqlCount, "Count from EF should match the count from the SqlQuery");
+        }
         private TestDbContext SetupDbContext(bool populateData)
         {
             TestDbContext dbContext = new TestDbContext();
