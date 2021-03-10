@@ -693,7 +693,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
         [TestMethod]
-        public void FromSqlQuery_Count()
+        public void Sql_SqlQuery_Count()
         {
             var dbContext = SetupDbContext(true);
             int efCount = dbContext.Orders.Where(o => o.Price > 5M).Count();
@@ -702,6 +702,17 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(efCount > 0, "Count from EF should be greater than zero");
             Assert.IsTrue(efCount > 0, "Count from SQL should be greater than zero");
             Assert.IsTrue(efCount == sqlCount, "Count from EF should match the count from the SqlQuery");
+        }
+        [TestMethod]
+        public void Sql_TableExists()
+        {
+            var dbContext = SetupDbContext(true);
+            int efCount = dbContext.Orders.Where(o => o.Price > 5M).Count();
+            bool ordersTableExists = dbContext.Database.TableExists("Orders");
+            bool orderNewTableExists = dbContext.Database.TableExists("OrdersNew");
+
+            Assert.IsTrue(ordersTableExists, "Orders table should exist");
+            Assert.IsTrue(!orderNewTableExists , "Orders_New table should not exist");
         }
         private TestDbContext SetupDbContext(bool populateData)
         {
