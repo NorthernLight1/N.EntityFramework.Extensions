@@ -578,6 +578,11 @@ namespace N.EntityFramework.Extensions
             var dbConnection = database.Connection as SqlConnection;
             return new SqlQuery(dbConnection, sqlText, parameters);
         }
+        public static bool TableExists(this Database database, string tableName)
+        {
+            var dbConnection = database.Connection as SqlConnection;
+            return SqlUtil.TableExists(tableName, dbConnection, null);
+        }
         public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath)
         {
             return QueryToCsvFile<T>(querable, filePath, new QueryToFileOptions());

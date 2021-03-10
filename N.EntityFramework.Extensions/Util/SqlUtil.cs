@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 
@@ -14,6 +15,8 @@ namespace N.EntityFramework.Extensions
         internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, object[] parameters = null, int? commandTimeout=null)
         {
             var sqlCommand = new SqlCommand(query, connection, transaction);
+            if (connection.State == ConnectionState.Closed)
+                connection.Open();
             if (commandTimeout.HasValue)
                 sqlCommand.CommandTimeout = commandTimeout.Value;
             if (parameters != null)
@@ -23,6 +26,8 @@ namespace N.EntityFramework.Extensions
         internal static object ExecuteScalar(string query, SqlConnection connection, SqlTransaction transaction, object[] parameters = null, int? commandTimeout = null)
         {
             var sqlCommand = new SqlCommand(query, connection, transaction);
+            if (connection.State == ConnectionState.Closed)
+                connection.Open();
             if (commandTimeout.HasValue)
                 sqlCommand.CommandTimeout = commandTimeout.Value;
             if(parameters != null)

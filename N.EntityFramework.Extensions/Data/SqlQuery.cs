@@ -23,9 +23,6 @@ namespace N.EntityFramework.Extensions
 
         public int Count()
         {
-            if (Connection.State == ConnectionState.Closed)
-                Connection.Open();
-
             string newSqlText = string.Format("SELECT COUNT(*) FROM ({0}) s", this.SqlText);
             return (int)SqlUtil.ExecuteScalar(newSqlText, this.Connection, null, this.Parameters);
         }
