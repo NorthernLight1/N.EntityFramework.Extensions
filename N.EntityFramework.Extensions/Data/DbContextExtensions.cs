@@ -110,7 +110,7 @@ namespace N.EntityFramework.Extensions
                     string[] columnNames = tableMapping.Columns.Where(o => options.KeepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
-                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.Guid_ColumnName);
+                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.InternalId_ColumnName);
                     var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
 
                     IEnumerable<string> columnsToInsert = columnNames;
@@ -129,13 +129,13 @@ namespace N.EntityFramework.Extensions
                         CommonUtil<T>.GetJoinConditionSql(options.InsertOnCondition, storeGeneratedColumnNames, destinationTableName, stagingTableName)) : "";
 
                     string insertSqlText = columnsToOutput.Any()
-                        ? string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4}{5};",
+                        ? string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4}{5} ORDER BY {6};",
                             destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
                             SqlUtil.ConvertToColumnString(columnsToOutput),
-                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText)
-                        : string.Format("INSERT INTO {0} ({1}) SELECT {2} FROM {3}{4};",
+                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText, Constants.InternalId_ColumnName)
+                        : string.Format("INSERT INTO {0} ({1}) SELECT {2} FROM {3}{4} ORDER BY {5};",
                             destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
-                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText);
+                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText, Constants.InternalId_ColumnName);
 
                     if(options.KeepIdentity)
                         SqlUtil.ToggleIdentityInsert(true, destinationTableName, dbConnection, transaction);
@@ -198,7 +198,7 @@ namespace N.EntityFramework.Extensions
             }
             if (useInteralId)
             {
-                sqlBulkCopy.ColumnMappings.Add(Constants.Guid_ColumnName, Constants.Guid_ColumnName);
+                sqlBulkCopy.ColumnMappings.Add(Constants.InternalId_ColumnName, Constants.InternalId_ColumnName);
             }
             sqlBulkCopy.WriteToServer(dataReader);
 
@@ -253,12 +253,12 @@ namespace N.EntityFramework.Extensions
                     string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
-                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.Guid_ColumnName);
+                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.InternalId_ColumnName);
                     var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
 
                     IEnumerable<string> columnsToInsert = columnNames.Where(o => !options.GetIgnoreColumnsOnInsert().Contains(o));
                     IEnumerable<string> columnstoUpdate = columnNames.Where(o => !options.GetIgnoreColumnsOnUpdate().Contains(o)).Select(o => string.Format("t.{0}=s.{0}", o));
-                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.Guid_ColumnName) };
+                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
                     Type entityType = typeof(T);
 

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>N.EntityFramework.Extensions</id>
-    <version>1.4.5</version>
+    <version>1.4.6</version>
     <title>N.EntityFramework.Extensions</title>
     <authors>Northern25</authors>
     <owners>Northern25</owners>
