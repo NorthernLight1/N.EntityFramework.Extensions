@@ -447,12 +447,15 @@ namespace N.EntityFramework.Extensions
 
         private static void ClearEntityStateToUnchanged<T>(DbContext dbContext, IEnumerable<T> entities)
         {
+            bool autoDetectCahngesEnabled = dbContext.Configuration.AutoDetectChangesEnabled;
+            dbContext.Configuration.AutoDetectChangesEnabled = false;
             foreach (var entity in entities)
             {
                 var entry = dbContext.Entry(entity);
                 if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
                     dbContext.Entry(entity).State = EntityState.Unchanged;
             }
+            dbContext.Configuration.AutoDetectChangesEnabled = autoDetectCahngesEnabled;
         }
 
         private static string GetStagingTableName(TableMapping tableMapping, bool usePermanentTable, SqlConnection sqlConnection)
