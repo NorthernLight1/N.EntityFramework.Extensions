@@ -54,7 +54,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             var dbContext = SetupDbContext(true);
             int oldTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).ToList();
-            int rowsDeleted = dbContext.BulkDelete(orders, options => { options.DeleteOnCondition = (s, t) => s.ExternalId == t.ExternalId; options.UsePermanentTable = true;  });
+            int rowsDeleted = dbContext.BulkDelete(orders, options => { options.DeleteOnCondition = (s, t) => s.ExternalId == t.ExternalId; options.UsePermanentTable = true; });
             int newTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
 
             Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price < $2)");
@@ -96,23 +96,27 @@ namespace N.EntityFramework.Extensions.Test.Tests
         [TestMethod]
         public void BulkInsert_Options_AutoMapIdentity()
         {
-            var dbContext = SetupDbContext(true);
-            var orders = new List<Order>
+
+            var dbContext = SetupDbContext(false);
+            var orders = new List<Order>();
+            for (int i = 0; i < 5000; i++)
             {
-                new Order { ExternalId = "id-1", Price=7.10M },
-                new Order { ExternalId = "id-2", Price=9.33M },
-                new Order { ExternalId = "id-3", Price=3.25M },
-                new Order { ExternalId = "id-1000001", Price=2.15M },
-                new Order { ExternalId = "id-1000002", Price=5.75M },
-            };
+                orders.Add(new Order { ExternalId = i.ToString(), Price = ((decimal)i + 0.55M) });
+            }
             int rowsAdded = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>
             {
                 UsePermanentTable = true
             });
             bool autoMapIdentityMatched = true;
+            var ordersInDb = dbContext.Orders.ToList();
+            Order order1 = null;
+            Order order2 = null;
             foreach (var order in orders)
             {
-                if (!dbContext.Orders.Any(o => o.ExternalId == order.ExternalId && o.Id == order.Id && o.Price == order.Price))
+                order1 = order;
+                var orderinDb = ordersInDb.First(o => o.Id == order.Id);
+                order2 = orderinDb;
+                if (!(orderinDb.ExternalId == order.ExternalId && orderinDb.Price == order.Price))
                 {
                     autoMapIdentityMatched = false;
                     break;
@@ -152,7 +156,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                     BatchSize = 1000,
                 });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Assert.IsInstanceOfType(ex, typeof(SqlException));
                 Assert.IsTrue(ex.Message.StartsWith("Violation of PRIMARY KEY constraint 'PK_dbo.Orders'."));
@@ -285,9 +289,9 @@ namespace N.EntityFramework.Extensions.Test.Tests
             {
                 MergeOnCondition = (s, t) => s.ExternalId == t.ExternalId,
                 UsePermanentTable = true
-            }) ;
+            });
             bool autoMapIdentityMatched = true;
-            foreach(var order in orders)
+            foreach (var order in orders)
             {
                 if (!dbContext.Orders.Any(o => o.ExternalId == order.ExternalId && o.Id == order.Id && o.Price == order.Price))
                 {
@@ -455,7 +459,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 order.Price = 2.35M;
             }
             var oldTotal = dbContext.Orders.Where(o => o.Price == 2.35M).OrderBy(o => o.Id).Count();
-            int rowsUpdated = dbContext.BulkUpdate(orders, options =>  { options.UpdateOnCondition = (s, t) => s.ExternalId == t.ExternalId; });
+            int rowsUpdated = dbContext.BulkUpdate(orders, options => { options.UpdateOnCondition = (s, t) => s.ExternalId == t.ExternalId; });
             var newTotal = dbContext.Orders.Where(o => o.Price == 2.35M).OrderBy(o => o.Id).Count();
 
             Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
@@ -514,7 +518,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             string tableName = "OrdersUnderTen";
             int oldSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             //int oldTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
-            int rowsInserted = dbContext.Orders.Where(o => o.Price < 10M).InsertFromQuery(tableName, o => new { o.Price, o.Id  });
+            int rowsInserted = dbContext.Orders.Where(o => o.Price < 10M).InsertFromQuery(tableName, o => new { o.Price, o.Id });
             int newSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             int newTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
 
@@ -578,7 +582,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             string filePath = "SqlQueryToCsvFile_Options_ColumnDelimiter_TextQualifer-Test.csv";
             int count = dbContext.Orders.Where(o => o.Price > 5M).Count();
             dbContext.Database.SqlQuery<object>("SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
-            var queryToCsvFileResult = dbContext.Database.SqlQueryToCsvFile(filePath, options => { options.ColumnDelimiter = "|"; options.TextQualifer = "\""; }, 
+            var queryToCsvFileResult = dbContext.Database.SqlQueryToCsvFile(filePath, options => { options.ColumnDelimiter = "|"; options.TextQualifer = "\""; },
                 "SELECT * FROM Orders WHERE Price > @Price", new SqlParameter("@Price", 5M));
 
             Assert.IsTrue(count > 0, "There should be existing data in the source table");
@@ -664,7 +668,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             // Access to previous value creates an exception as the value must be present when we create the SQL code.
             Assert.ThrowsException<InvalidOperationException>(() => dbContext.Orders.Where(a => a.Price < 10).UpdateFromQuery(a => new Order { Price = a.Price + priceUpdate }));
         }
-        
+
         [TestMethod]
         public void UpdateFromQuery_With_String_Containing_Apostrophe()
         {
@@ -704,6 +708,17 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(efCount == sqlCount, "Count from EF should match the count from the SqlQuery");
         }
         [TestMethod]
+        public void Sql_SqlQuery_Count_With_OrderBy()
+        {
+            var dbContext = SetupDbContext(true);
+            int efCount = dbContext.Orders.Where(o => o.Price > 5M).Count();
+            var sqlCount = dbContext.Database.FromSqlQuery("SELECT * FROM Orders WHERE Price > @Price ORDER BY Id", new SqlParameter("@Price", 5M)).Count();
+
+            Assert.IsTrue(efCount > 0, "Count from EF should be greater than zero");
+            Assert.IsTrue(efCount > 0, "Count from SQL should be greater than zero");
+            Assert.IsTrue(efCount == sqlCount, "Count from EF should match the count from the SqlQuery");
+        }
+        [TestMethod]
         public void Sql_TableExists()
         {
             var dbContext = SetupDbContext(true);
@@ -712,7 +727,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             bool orderNewTableExists = dbContext.Database.TableExists("OrdersNew");
 
             Assert.IsTrue(ordersTableExists, "Orders table should exist");
-            Assert.IsTrue(!orderNewTableExists , "Orders_New table should not exist");
+            Assert.IsTrue(!orderNewTableExists, "Orders_New table should not exist");
         }
         private TestDbContext SetupDbContext(bool populateData)
         {
@@ -725,7 +740,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 int id = 1;
                 for (int i = 0; i < 2050; i++)
                 {
-                    orders.Add(new Order { Id = id, ExternalId=string.Format("id-{0}",i), Price = 1.25M });
+                    orders.Add(new Order { Id = id, ExternalId = string.Format("id-{0}", i), Price = 1.25M });
                     id++;
                 }
                 for (int i = 0; i < 1050; i++)

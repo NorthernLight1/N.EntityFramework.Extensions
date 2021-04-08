@@ -125,17 +125,12 @@ namespace N.EntityFramework.Extensions
                         propertySetters.Add(entityType.GetProperty(storeGeneratedColumnName));
                     }
 
-                    string whereSqlText = options.InsertIfNotExists ? string.Format(" WHERE NOT EXISTS(SELECT * FROM {0} WHERE {1})", destinationTableName,
-                        CommonUtil<T>.GetJoinConditionSql(options.InsertOnCondition, storeGeneratedColumnNames, destinationTableName, stagingTableName)) : "";
-
-                    string insertSqlText = columnsToOutput.Any()
-                        ? string.Format("INSERT INTO {0} ({1}) OUTPUT {2} SELECT {3} FROM {4}{5} ORDER BY {6};",
-                            destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
-                            SqlUtil.ConvertToColumnString(columnsToOutput),
-                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText, Constants.InternalId_ColumnName)
-                        : string.Format("INSERT INTO {0} ({1}) SELECT {2} FROM {3}{4} ORDER BY {5};",
-                            destinationTableName, SqlUtil.ConvertToColumnString(columnsToInsert),
-                            SqlUtil.ConvertToColumnString(columnsToInsert), stagingTableName, whereSqlText, Constants.InternalId_ColumnName);
+                    string insertSqlText = string.Format("MERGE {0} t USING {1} s ON {2} WHEN NOT MATCHED THEN INSERT ({3}) VALUES ({3}){4};",
+                        destinationTableName, 
+                        stagingTableName,
+                        options.InsertIfNotExists ? CommonUtil<T>.GetJoinConditionSql(options.InsertOnCondition, storeGeneratedColumnNames, "t", "s") : "1=2",
+                        SqlUtil.ConvertToColumnString(columnsToInsert),
+                        columnsToOutput.Count > 0 ? " OUTPUT " + SqlUtil.ConvertToColumnString(columnsToOutput) : "");
 
                     if(options.KeepIdentity)
                         SqlUtil.ToggleIdentityInsert(true, destinationTableName, dbConnection, transaction);
@@ -447,12 +442,15 @@ namespace N.EntityFramework.Extensions
 
         private static void ClearEntityStateToUnchanged<T>(DbContext dbContext, IEnumerable<T> entities)
         {
+            bool autoDetectCahngesEnabled = dbContext.Configuration.AutoDetectChangesEnabled;
+            dbContext.Configuration.AutoDetectChangesEnabled = false;
             foreach (var entity in entities)
             {
                 var entry = dbContext.Entry(entity);
                 if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
                     dbContext.Entry(entity).State = EntityState.Unchanged;
             }
+            dbContext.Configuration.AutoDetectChangesEnabled = autoDetectCahngesEnabled;
         }
 
         private static string GetStagingTableName(TableMapping tableMapping, bool usePermanentTable, SqlConnection sqlConnection)

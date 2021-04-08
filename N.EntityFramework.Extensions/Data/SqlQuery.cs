@@ -1,4 +1,5 @@
-﻿using System;
+﻿using N.EntityFramework.Extensions.Sql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -23,8 +24,8 @@ namespace N.EntityFramework.Extensions
 
         public int Count()
         {
-            string newSqlText = string.Format("SELECT COUNT(*) FROM ({0}) s", this.SqlText);
-            return (int)SqlUtil.ExecuteScalar(newSqlText, this.Connection, null, this.Parameters);
+            string countSqlText = SqlBuilder.Parse(this.SqlText).Count();
+            return (int)SqlUtil.ExecuteScalar(countSqlText, this.Connection, null, this.Parameters);
         }
         public int ExecuteNonQuery()
         {

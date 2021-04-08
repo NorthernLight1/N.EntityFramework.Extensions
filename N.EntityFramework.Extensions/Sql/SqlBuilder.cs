@@ -10,7 +10,7 @@ namespace N.EntityFramework.Extensions.Sql
 {
     internal class SqlBuilder
     {
-        private static IEnumerable<string> keywords = new string[] { "SELECT", "FROM", "WHERE" };
+        private static IEnumerable<string> keywords = new string[] { "SELECT", "FROM", "WHERE", "GROUP BY", "ORDER BY" };
         public string Sql
         {
             get { return this.ToString(); }
@@ -29,7 +29,7 @@ namespace N.EntityFramework.Extensions.Sql
             for (int i = 0; i < sqlText.Length;)
             {
                 //Find new Sql clause
-                int maxLenToSearch = sqlText.Length - i >= 6 ? 6 : sqlText.Length - i;
+                int maxLenToSearch = sqlText.Length - i >= 8 ? 8 : sqlText.Length - i;
                 string keyword = StartsWithString(sqlText.Substring(i, maxLenToSearch), keywords, StringComparison.OrdinalIgnoreCase);
                 //Process Sql clause
                 if (keyword != null && curClause != keyword)
@@ -49,6 +49,10 @@ namespace N.EntityFramework.Extensions.Sql
             }
             if (!string.IsNullOrEmpty(curClause))
                 Clauses.Add(SqlClause.Parse(curClause, sqlText.Substring(curClauseIndex)));
+        }
+        public string Count()
+        {
+            return string.Format("SELECT COUNT(*) FROM ({0}) s", string.Join("\r\n", Clauses.Where(o => o.Name != "ORDER BY").Select(o => o.ToString())));
         }
         public override string ToString()
         {
