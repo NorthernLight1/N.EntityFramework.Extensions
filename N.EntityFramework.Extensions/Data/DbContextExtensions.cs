@@ -115,7 +115,7 @@ namespace N.EntityFramework.Extensions
 
                     IEnumerable<string> columnsToInsert = columnNames;
 
-                    List<string> columnsToOutput = new List<string>();
+                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
                     Type entityType = typeof(T);
 
@@ -143,12 +143,15 @@ namespace N.EntityFramework.Extensions
                     {
                         if (rowsAffected == entities.Count())
                         {
-                            var entityIndex = 1;
+                            //var entityIndex = 1;
                             foreach(var result in bulkQueryResult.Results)
                             {
-                                var entity = bulkInsertResult.EntityMap[entityIndex];
-                                propertySetters[0].SetValue(entity,result[0]);
-                                entityIndex++;
+                                int entityId = (int)result[1];
+                                var entity = bulkInsertResult.EntityMap[entityId];
+                                for (int i = 2; i < columnsToOutput.Count; i++)
+                                {
+                                    propertySetters[2-i].SetValue(entity, result[i]);
+                                }
                             }
                         }
                     }
