@@ -5,7 +5,7 @@
 
 **If you are using Entity Framework Core v5.0.1+, you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
 
-## Bulk data support for the EntityFramework 6.4.4+
+## Bulk data support for the EntityFramework 6.2.0+
 
 The framework currently supports the following operations:
 
