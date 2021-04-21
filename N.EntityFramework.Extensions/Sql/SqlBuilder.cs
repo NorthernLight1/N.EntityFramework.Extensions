@@ -24,15 +24,20 @@ namespace N.EntityFramework.Extensions.Sql
 
         private void Initialize(string sqlText)
         {
+            //Clean Sql Text
+            sqlText = sqlText.Replace("\r\n", " ");
+            //Process Sql Text
             string curClause = string.Empty;
             int curClauseIndex = 0;
             for (int i = 0; i < sqlText.Length;)
             {
                 //Find new Sql clause
-                int maxLenToSearch = sqlText.Length - i >= 8 ? 8 : sqlText.Length - i;
+                int maxLenToSearch = sqlText.Length - i >= 10 ? 10 : sqlText.Length - i;
                 string keyword = StartsWithString(sqlText.Substring(i, maxLenToSearch), keywords, StringComparison.OrdinalIgnoreCase);
+                bool isWordStart = i > 0 ? sqlText[i-1] == ' ' : true;
+                
                 //Process Sql clause
-                if (keyword != null && curClause != keyword)
+                if (keyword != null && curClause != keyword && isWordStart)
                 {
                     if (!string.IsNullOrEmpty(curClause))
                     {
@@ -63,7 +68,8 @@ namespace N.EntityFramework.Extensions.Sql
             string value=null;
             foreach (var valueToFind in valuesToFind)
             {
-                if (textToSearch.StartsWith(valueToFind, stringComparison))
+                bool isWord = textToSearch.Length > valueToFind.Length && textToSearch[valueToFind.Length] == ' ';
+                if (textToSearch.StartsWith(valueToFind, stringComparison) && isWord)
                 {
                     value = valueToFind;
                     break;

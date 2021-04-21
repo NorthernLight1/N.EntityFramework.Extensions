@@ -16,8 +16,8 @@ namespace N.EntityFramework.Extensions.Sql
         }
         public static SqlClause Parse(string name, string inputText)
         {
-            string cleanText = inputText.Replace("\r\n", "").Trim();
-            return new SqlClause { Name = name, InputText = cleanText };
+            //string cleanText = inputText.Replace("\r\n", " ").Trim();
+            return new SqlClause { Name = name, InputText = inputText.Trim() };
         }
         public override string ToString()
         {
