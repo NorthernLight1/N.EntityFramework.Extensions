@@ -64,10 +64,10 @@ namespace N.EntityFramework.Extensions
                     SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
                     transaction.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     transaction.Rollback();
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -162,10 +162,10 @@ namespace N.EntityFramework.Extensions
                     transaction.Commit();
                     return rowsAffected;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     transaction.Rollback();
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -313,10 +313,10 @@ namespace N.EntityFramework.Extensions
                     //ClearEntityStateToUnchanged(context, entities);
                     transaction.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     transaction.Rollback();
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -375,10 +375,10 @@ namespace N.EntityFramework.Extensions
                     //ClearEntityStateToUnchanged(context, entities);
                     transaction.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     transaction.Rollback();
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -517,10 +517,10 @@ namespace N.EntityFramework.Extensions
                     rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
                     dbTransaction.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     dbTransaction.Rollback();
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -562,10 +562,10 @@ namespace N.EntityFramework.Extensions
 
                     dbTransaction.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     dbTransaction.Rollback();
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -733,10 +733,10 @@ namespace N.EntityFramework.Extensions
                     rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
                     dbTransaction.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     dbTransaction.Rollback();
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
