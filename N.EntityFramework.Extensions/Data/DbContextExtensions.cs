@@ -41,7 +41,6 @@ namespace N.EntityFramework.Extensions
         {
             int rowsAffected = 0;
             var tableMapping = context.GetTableMapping(typeof(T));
-            Validate(tableMapping);
             var dbConnection = context.GetSqlConnection();
 
             if (dbConnection.State == ConnectionState.Closed)
@@ -56,8 +55,12 @@ namespace N.EntityFramework.Extensions
                     string[] keyColumnNames = options.DeleteOnCondition != null ? CommonUtil<T>.GetColumns(options.DeleteOnCondition, new[] { "s" }) 
                         : tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
+                    if (keyColumnNames.Length == 0 && options.DeleteOnCondition == null)
+                        throw new InvalidDataException("BulkDelete requires that the entity have a primary key or the Options.DeleteOnCondition must be set.");
+
+
                     SqlUtil.CloneTable(destinationTableName, stagingTableName, keyColumnNames, dbConnection, transaction);
-                    BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlBulkCopyOptions.KeepIdentity);
+                    BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlBulkCopyOptions.KeepIdentity, false, false);
                     string deleteSql = string.Format("DELETE t FROM {0} s JOIN {1} t ON {2}", stagingTableName, destinationTableName, 
                         CommonUtil<T>.GetJoinConditionSql(options.DeleteOnCondition, keyColumnNames));
                     rowsAffected = SqlUtil.ExecuteSql(deleteSql, dbConnection, transaction, options.CommandTimeout);
@@ -77,13 +80,6 @@ namespace N.EntityFramework.Extensions
             }
         }
 
-        private static void Validate(TableMapping tableMapping)
-        {
-            if (tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Count() == 0)
-            {
-                throw new Exception("You must have a primary key on this table to use this function.");
-            }
-        }
         public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities)
         {
             return context.BulkInsert<T>(entities, new BulkInsertOptions<T>());
@@ -105,9 +101,10 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
+                    string stagingTableName = GetStagingTableName(tableMapping, true, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.Columns.Where(o => options.KeepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    //string[] columnNames = tableMapping.Columns.Where(o => options.KeepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    string[] columnNames = tableMapping.GetColumns(options.KeepIdentity);
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
                     SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.InternalId_ColumnName);
@@ -132,10 +129,10 @@ namespace N.EntityFramework.Extensions
                         SqlUtil.ConvertToColumnString(columnsToInsert),
                         columnsToOutput.Count > 0 ? " OUTPUT " + SqlUtil.ConvertToColumnString(columnsToOutput) : "");
 
-                    if(options.KeepIdentity)
+                    if(options.KeepIdentity && storeGeneratedColumnNames.Length > 0)
                         SqlUtil.ToggleIdentityInsert(true, destinationTableName, dbConnection, transaction);
                     var bulkQueryResult = context.BulkQuery(insertSqlText, dbConnection, transaction, options);
-                    if (options.KeepIdentity)
+                    if (options.KeepIdentity && storeGeneratedColumnNames.Length > 0)
                         SqlUtil.ToggleIdentityInsert(false, destinationTableName, dbConnection, transaction);
                     rowsAffected = bulkQueryResult.RowsAffected;
 
@@ -162,7 +159,7 @@ namespace N.EntityFramework.Extensions
                     transaction.Commit();
                     return rowsAffected;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     transaction.Rollback();
                     throw;
@@ -176,7 +173,7 @@ namespace N.EntityFramework.Extensions
         }
 
         private static BulkInsertResult<T> BulkInsert<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName,
-            string[] inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId=false)
+            string[] inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId=false, bool includeConditionColumns=true)
         {
             var dataReader = new EntityDataReader<T>(tableMapping, entities, useInteralId);
 
@@ -193,6 +190,13 @@ namespace N.EntityFramework.Extensions
             {
                 if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
                     sqlBulkCopy.ColumnMappings.Add(column.Property.Name, column.Column.Name);
+            }
+            if (includeConditionColumns)
+            {
+                foreach (var condition in dataReader.TableMapping.Conditions)
+                {
+                    sqlBulkCopy.ColumnMappings.Add(condition.Column.Name, condition.Column.Name);
+                }
             }
             if (useInteralId)
             {
@@ -248,8 +252,11 @@ namespace N.EntityFramework.Extensions
                 {
                     string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    string[] columnNames = tableMapping.GetColumns();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+
+                    if (storeGeneratedColumnNames.Length == 0 && options.MergeOnCondition == null)
+                        throw new InvalidDataException("BulkMerge requires that the entity have a primary key or the Options.MergeOnCondition must be set.");
 
                     SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.InternalId_ColumnName);
                     var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
@@ -287,7 +294,7 @@ namespace N.EntityFramework.Extensions
                         if (action != SqlMergeAction.Delete)
                         {
                             int entityId = (int)result[1];
-                            id = Convert.ToString(result[2]);
+                            id = (storeGeneratedColumnNames.Length > 0 ? Convert.ToString(result[2]) : "PrimaryKeyMissing");
                             entity = bulkInsertResult.EntityMap[entityId];
                             if (options.AutoMapOutputIdentity && entity != null)
                             {
@@ -359,6 +366,9 @@ namespace N.EntityFramework.Extensions
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
                     string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+
+                    if(storeGeneratedColumnNames.Length == 0 && options.UpdateOnCondition == null)
+                        throw new InvalidDataException("BulkUpdate requires that the entity have a primary key or the Options.UpdateOnCondition must be set.");
 
                     SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction);
                     BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity);
@@ -578,6 +588,11 @@ namespace N.EntityFramework.Extensions
         { 
             var dbConnection = database.Connection as SqlConnection;
             return new SqlQuery(dbConnection, sqlText, parameters);
+        }
+        public static int ClearTable(this Database database, string tableName)
+        {
+            var dbConnection = database.Connection as SqlConnection;
+            return SqlUtil.ClearTable(tableName, dbConnection, null);
         }
         public static bool TableExists(this Database database, string tableName)
         {
@@ -813,23 +828,30 @@ namespace N.EntityFramework.Extensions
                             .GetItems<EntityContainer>(DataSpace.CSpace)
                                   .Single()
                                   .EntitySets
-                                  .Single(s => s.ElementType.Name == entityType.Name);
+                                  .Single(s => s.ElementType.FullName == entityType.FullName 
+                                    || (entityType.BaseType != null && s.ElementType.FullName == entityType.BaseType.FullName));
 
             // Find the mapping between conceptual and storage model for this entity set
-            var mapping = metadata.GetItems<EntityContainerMapping>(DataSpace.CSSpace)
+            var mappings = metadata.GetItems<EntityContainerMapping>(DataSpace.CSSpace)
                                      .Single()
                                      .EntitySetMappings
                                      .Single(s => s.EntitySet == entitySet);
 
             // Find all properties (column) that are mapped
-            var columns = mapping
-                           .EntityTypeMappings.Single()
-                           .Fragments.Single()
-                           .PropertyMappings
-                           .OfType<ScalarPropertyMapping>()
-                           .ToList();
+            var columns = new List<ScalarPropertyMapping>();
+            var conditions = new List<ConditionPropertyMapping>();
+            foreach (var mapping in mappings.EntityTypeMappings
+                .Where(o => o.EntityType == null || o.EntityType.FullName == entityType.FullName))
+            {
+                foreach(var propertyMapping in mapping.Fragments.Single().PropertyMappings.OfType<ScalarPropertyMapping>().ToList())
+                {
+                    if(!columns.Any(o => o.Column == propertyMapping.Column))
+                        columns.Add(propertyMapping);
+                }
+                conditions.AddRange(mapping.Fragments.Single().Conditions);
+            }
 
-            return new TableMapping(columns, entitySet, entityType, mapping);
+            return new TableMapping(entitySet, entityType, mappings, columns, conditions);
         }
     }
 }
