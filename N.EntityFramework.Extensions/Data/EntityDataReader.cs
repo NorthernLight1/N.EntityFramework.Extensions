@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity.Core.Mapping;
 using System.Linq.Expressions;
 
 namespace N.EntityFramework.Extensions
@@ -17,6 +18,7 @@ namespace N.EntityFramework.Extensions
         private IEnumerable<T> entities;
         private IEnumerator<T> enumerator;
         private Dictionary<int, Func<T, object>> selectors;
+        private Dictionary<int, ConditionPropertyMapping> conditions;
 
         public EntityDataReader(TableMapping tableMapping, IEnumerable<T> entities, bool useInternalId)
         {
@@ -27,8 +29,9 @@ namespace N.EntityFramework.Extensions
             this.entities = entities;
             this.enumerator = entities.GetEnumerator();
             this.selectors = new Dictionary<int, Func<T, object>>();
+            this.conditions = new Dictionary<int, ConditionPropertyMapping>();
             this.EntityMap = new Dictionary<long, T>();
-            this.FieldCount = tableMapping.Columns.Count;
+            this.FieldCount = tableMapping.Columns.Count + tableMapping.Conditions.Count;
             this.TableMapping = tableMapping;
             
 
@@ -40,6 +43,12 @@ namespace N.EntityFramework.Extensions
                 var expression = Expression.Lambda<Func<T, object>>(Expression.Convert(propertyExpression, typeof(object)), type);
                 selectors[i] = expression.Compile();
                 columnIndexes[column.Property.Name] = i;
+                i++;
+            }
+            foreach(var condition in TableMapping.Conditions)
+            {
+                conditions[i] = condition;
+                columnIndexes[condition.Column.Name] = i;
                 i++;
             }
             
@@ -175,13 +184,13 @@ namespace N.EntityFramework.Extensions
 
         public object GetValue(int i)
         {
-            if(i == tableFieldCount)
+            if(useInternalId && i == this.FieldCount - 1)
             {
                 return this.currentId;
             }
             else
             {
-                return selectors[i](enumerator.Current);
+                return i < tableFieldCount ? selectors[i](enumerator.Current) : conditions[i].GetPrivateFieldValue("Value");
             }
             
         }

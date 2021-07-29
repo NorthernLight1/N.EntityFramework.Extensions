@@ -49,6 +49,30 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(newTotal == 0, "Must be 0 to indicate all records were deleted");
         }
         [TestMethod]
+        public void BulkDelete_Tpc()
+        {
+            var dbContext = SetupDbContext(true);
+            var customers = dbContext.TpcPeople.OfType<TpcCustomer>().ToList();
+            int rowsDeleted = dbContext.BulkDelete(customers, options => { options.DeleteOnCondition = (s, t) => s.Id == t.Id; });
+            var newCustomers = dbContext.TpcPeople.OfType<TpcCustomer>().Count();
+
+            Assert.IsTrue(customers.Count > 0, "There must be tpcCustomer records in database");
+            Assert.IsTrue(rowsDeleted == customers.Count, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newCustomers == 0, "Must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
+        public void BulkDelete_Tph()
+        {
+            var dbContext = SetupDbContext(true);
+            var customers = dbContext.TphPeople.OfType<TphCustomer>().ToList();
+            int rowsDeleted = dbContext.BulkDelete(customers);
+            var newCustomers = dbContext.TphPeople.OfType<TphCustomer>().Count();
+
+            Assert.IsTrue(customers.Count > 0, "There must be tphCustomer records in database");
+            Assert.IsTrue(rowsDeleted == customers.Count, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newCustomers == 0, "Must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
         public void BulkDelete_Options_DeleteOnCondition()
         {
             var dbContext = SetupDbContext(true);
@@ -75,6 +99,81 @@ namespace N.EntityFramework.Extensions.Test.Tests
             int newTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
 
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
+        }
+        [TestMethod]
+        public void BulkInsert_Tph()
+        {
+            var dbContext = SetupDbContext(false);
+            var customers = new List<TphCustomer>();
+            var vendors = new List<TphVendor>();
+            for (int i = 0; i < 20000; i++)
+            {
+                customers.Add(new TphCustomer { 
+                    Id = i, 
+                    FirstName = string.Format("John_{0}",i), 
+                    LastName = string.Format("Smith_{0}",i),
+                    Email = string.Format("john.smith{0}@domain.com", i),
+                    Phone = "404-555-1111",
+                    AddedDate = DateTime.UtcNow
+                });
+            }
+            for(int i = 20000; i < 30000; i++)
+            {
+                vendors.Add(new TphVendor
+                {
+                    Id = i,
+                    FirstName = string.Format("Mike_{0}", i),
+                    LastName = string.Format("Smith_{0}", i),
+                    Phone = "404-555-2222",
+                    Email = string.Format("mike.smith{0}@domain.com", i),
+                    Url = string.Format("http://domain.com/mike.smith{0}", i)
+                });
+            }
+            int oldTotal = dbContext.TphPeople.Count();
+            int customerRowsInserted = dbContext.BulkInsert(customers);
+            int vendorRowsInserted = dbContext.BulkInsert(vendors);
+            int rowsInserted = customerRowsInserted + vendorRowsInserted;
+            int newTotal = dbContext.TphPeople.Count();
+
+            Assert.IsTrue(rowsInserted == customers.Count + vendors.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
+        }
+        [TestMethod]
+        public void BulkInsert_Tpc()
+        {
+            var dbContext = SetupDbContext(false);
+            var customers = new List<TpcCustomer>();
+            var vendors = new List<TpcVendor>();
+            for (int i = 0; i < 20000; i++)
+            {
+                customers.Add(new TpcCustomer
+                {
+                    Id = i,
+                    FirstName = string.Format("John_{0}", i),
+                    LastName = string.Format("Smith_{0}", i),
+                    Email = string.Format("john.smith{0}@domain.com", i),
+                    AddedDate = DateTime.UtcNow
+                });
+            }
+            for (int i = 20000; i < 30000; i++)
+            {
+                vendors.Add(new TpcVendor
+                {
+                    Id = i,
+                    FirstName = string.Format("Mike_{0}", i),
+                    LastName = string.Format("Smith_{0}", i),
+                    Email = string.Format("mike.smith{0}@domain.com", i),
+                    Url = string.Format("http://domain.com/mike.smith{0}", i)
+                });
+            }
+            int oldTotal = dbContext.TpcPeople.Count();
+            int customerRowsInserted = dbContext.BulkInsert(customers);
+            int vendorRowsInserted = dbContext.BulkInsert(vendors);
+            int rowsInserted = customerRowsInserted + vendorRowsInserted;
+            int newTotal = dbContext.TpcPeople.Count();
+
+            Assert.IsTrue(rowsInserted == customers.Count + vendors.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
         [TestMethod]
@@ -228,6 +327,66 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
             Assert.IsTrue(areAddedOrdersMerged, "The orders that were added did not merge correctly");
             Assert.IsTrue(areUpdatedOrdersMerged, "The orders that were updated did not merge correctly");
+        }
+        [TestMethod]
+        public void BulkMerge_Tpc()
+        {
+            var dbContext = SetupDbContext(true);
+            var customers = dbContext.TpcPeople.Where(o => o.Id <= 1000).OfType<TpcCustomer>().ToList();
+            int customersToAdd = 5000;
+            int customersToUpdate = customers.Count;
+            foreach (var customer in customers)
+            {
+                customer.FirstName = "BulkMerge_Tpc_Update";
+            }
+            for (int i = 0; i < customersToAdd; i++)
+            {
+                customers.Add(new TpcCustomer
+                {
+                    Id = 10000 + i,
+                    FirstName = "BulkMerge_Tpc_Add",
+                    AddedDate = DateTime.UtcNow
+                });
+            }
+            var result = dbContext.BulkMerge(customers, options => { options.MergeOnCondition = (s, t) => s.Id == t.Id; });
+            int customersAdded = dbContext.TpcPeople.Where(o => o.FirstName == "BulkMerge_Tpc_Add").OfType<TpcCustomer>().Count();
+            int customersUpdated = dbContext.TpcPeople.Where(o => o.FirstName == "BulkMerge_Tpc_Update").OfType<TpcCustomer>().Count();
+
+            Assert.IsTrue(result.RowsAffected == customers.Count(), "The number of rows inserted must match the count of customer list");
+            Assert.IsTrue(result.RowsUpdated == customersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == customersToAdd, "The number of rows added must match");
+            Assert.IsTrue(customersToAdd == customersAdded, "The custmoers that were added did not merge correctly");
+            Assert.IsTrue(customersToUpdate == customersUpdated, "The customers that were updated did not merge correctly");
+        }
+        [TestMethod]
+        public void BulkMerge_Tph()
+        {
+            var dbContext = SetupDbContext(true);
+            var customers = dbContext.TphPeople.Where(o => o.Id <= 1000).OfType<TphCustomer>().ToList();
+            int customersToAdd = 5000;
+            int customersToUpdate = customers.Count;
+            foreach (var customer in customers)
+            {
+                customer.FirstName = "BulkMerge_Tph_Update";
+            }
+            for (int i = 0; i < customersToAdd; i++)
+            {
+                customers.Add(new TphCustomer
+                {
+                    Id = 10000 + i,
+                    FirstName = "BulkMerge_Tph_Add",
+                    AddedDate = DateTime.UtcNow
+                });
+            }
+            var result = dbContext.BulkMerge(customers);
+            int customersAdded = dbContext.TphPeople.Where(o => o.FirstName == "BulkMerge_Tph_Add").OfType<TphCustomer>().Count();
+            int customersUpdated = dbContext.TphPeople.Where(o => o.FirstName == "BulkMerge_Tph_Update").OfType<TphCustomer>().Count();
+
+            Assert.IsTrue(result.RowsAffected == customers.Count(), "The number of rows inserted must match the count of customer list");
+            Assert.IsTrue(result.RowsUpdated == customersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == customersToAdd, "The number of rows added must match");
+            Assert.IsTrue(customersToAdd == customersAdded, "The custmoers that were added did not merge correctly");
+            Assert.IsTrue(customersToUpdate == customersUpdated, "The customers that were updated did not merge correctly");
         }
         [TestMethod]
         public void BulkMerge_Options_MergeOnCondition()
@@ -448,6 +607,46 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(rowsUpdated == orders.Count, "The number of rows updated must match the count of entities that were retrieved");
             Assert.IsTrue(newOrders == rowsUpdated, "The count of new orders must be equal the number of rows updated in the database.");
             //Assert.IsTrue(entitiesWithChanges == 0, "There should be no pending Order entities with changes after BulkInsert completes");
+        }
+        [TestMethod]
+        public void BulkUpdate_Tpc()
+        {
+            var dbContext = SetupDbContext(true);
+            var customers = dbContext.TpcPeople.Where(o => o.LastName != "BulkUpdateTest").OfType<TpcCustomer>().ToList();
+            var vendors = dbContext.TpcPeople.OfType<TpcVendor>().ToList();
+            foreach (var customer in customers)
+            {
+                customer.FirstName = string.Format("Id={0}", customer.Id);
+                customer.LastName = "BulkUpdate_Tpc";
+            }
+            int rowsUpdated = dbContext.BulkUpdate(customers, options => { options.UpdateOnCondition = (s, t) => s.Id == t.Id; });
+            var newCustomers = dbContext.TpcPeople.Where(o => o.LastName == "BulkUpdate_Tpc").OfType<TpcCustomer>().Count();
+            int entitiesWithChanges = dbContext.ChangeTracker.Entries().Where(t => t.State == EntityState.Modified).Count();
+
+            Assert.IsTrue(vendors.Count > 0 && vendors.Count != customers.Count, "There should be vendor records in the database");
+            Assert.IsTrue(customers.Count > 0, "There must be customers in database that match this condition (Price = $1.25)");
+            Assert.IsTrue(rowsUpdated == customers.Count, "The number of rows updated must match the count of entities that were retrieved");
+            Assert.IsTrue(newCustomers == rowsUpdated, "The count of new customers must be equal the number of rows updated in the database.");
+        }
+        [TestMethod]
+        public void BulkUpdate_Tph()
+        {
+            var dbContext = SetupDbContext(true);
+            var customers = dbContext.TphPeople.Where(o => o.LastName != "BulkUpdateTest").OfType<TphCustomer>().ToList();
+            var vendors = dbContext.TphPeople.OfType<TphVendor>().ToList();
+            foreach (var customer in customers)
+            {
+                customer.FirstName = string.Format("Id={0}", customer.Id);
+                customer.LastName = "BulkUpdateTest";
+            }
+            int rowsUpdated = dbContext.BulkUpdate(customers);
+            var newCustomers = dbContext.TphPeople.Where(o => o.LastName == "BulkUpdateTest").OrderBy(o => o.Id).Count();
+            int entitiesWithChanges = dbContext.ChangeTracker.Entries().Where(t => t.State == EntityState.Modified).Count();
+
+            Assert.IsTrue(vendors.Count > 0 && vendors.Count != customers.Count, "There should be vendor records in the database");
+            Assert.IsTrue(customers.Count > 0, "There must be customers in database that match this condition (Price = $1.25)");
+            Assert.IsTrue(rowsUpdated == customers.Count, "The number of rows updated must match the count of entities that were retrieved");
+            Assert.IsTrue(newCustomers == rowsUpdated, "The count of new customers must be equal the number of rows updated in the database.");
         }
         [TestMethod]
         public void BulkUpdate_Options_UpdateOnCondition()
@@ -734,6 +933,9 @@ namespace N.EntityFramework.Extensions.Test.Tests
             TestDbContext dbContext = new TestDbContext();
             dbContext.Orders.DeleteFromQuery();
             dbContext.Articles.DeleteFromQuery();
+            dbContext.Database.ClearTable("TphPeople");
+            dbContext.Database.ClearTable("TpcCustomer");
+            dbContext.Database.ClearTable("TpcVendor");
             if (populateData)
             {
                 var orders = new List<Order>();
@@ -781,6 +983,66 @@ namespace N.EntityFramework.Extensions.Test.Tests
 
                 Debug.WriteLine("Last Id for Article is {0}", id);
                 dbContext.BulkInsert(articles, new BulkInsertOptions<Article>() { KeepIdentity = false, AutoMapOutputIdentity = false });
+
+                //TPH Customers & Vendors
+                var tphCustomers = new List<TphCustomer>();
+                var tphVendors = new List<TphVendor>();
+                for (int i = 0; i < 2000; i++)
+                {
+                    tphCustomers.Add(new TphCustomer
+                    {
+                        Id = i,
+                        FirstName = string.Format("John_{0}", i),
+                        LastName = string.Format("Smith_{0}", i),
+                        Email = string.Format("john.smith{0}@domain.com", i),
+                        Phone = "404-555-1111",
+                        AddedDate = DateTime.UtcNow
+                    });
+                }
+                for (int i = 2000; i < 3000; i++)
+                {
+                    tphVendors.Add(new TphVendor
+                    {
+                        Id = i,
+                        FirstName = string.Format("Mike_{0}", i),
+                        LastName = string.Format("Smith_{0}", i),
+                        Phone = "404-555-2222",
+                        Email = string.Format("mike.smith{0}@domain.com", i),
+                        Url = string.Format("http://domain.com/mike.smith{0}", i)
+                    });
+                }
+                dbContext.BulkInsert(tphCustomers, new BulkInsertOptions<TphCustomer>() { KeepIdentity = true });
+                dbContext.BulkInsert(tphVendors, new BulkInsertOptions<TphVendor>() { KeepIdentity = true });
+
+                //TPC Customers & Vendors
+                var tpcCustomers = new List<TpcCustomer>();
+                var tpcVendors = new List<TpcVendor>();
+                for (int i = 0; i < 2000; i++)
+                {
+                    tpcCustomers.Add(new TpcCustomer
+                    {
+                        Id = i,
+                        FirstName = string.Format("John_{0}", i),
+                        LastName = string.Format("Smith_{0}", i),
+                        Email = string.Format("john.smith{0}@domain.com", i),
+                        Phone = "404-555-1111",
+                        AddedDate = DateTime.UtcNow
+                    });
+                }
+                for (int i = 2000; i < 3000; i++)
+                {
+                    tpcVendors.Add(new TpcVendor
+                    {
+                        Id = i,
+                        FirstName = string.Format("Mike_{0}", i),
+                        LastName = string.Format("Smith_{0}", i),
+                        Phone = "404-555-2222",
+                        Email = string.Format("mike.smith{0}@domain.com", i),
+                        Url = string.Format("http://domain.com/mike.smith{0}", i)
+                    });
+                }
+                dbContext.BulkInsert(tpcCustomers, new BulkInsertOptions<TpcCustomer>() { KeepIdentity = true });
+                dbContext.BulkInsert(tpcVendors, new BulkInsertOptions<TpcVendor>() { KeepIdentity = true });
             }
             return dbContext;
         }
