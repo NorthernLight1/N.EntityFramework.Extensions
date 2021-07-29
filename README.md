@@ -11,7 +11,7 @@ The framework currently supports the following operations:
 
 Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
 
-Inheritance models supported: Table Per Hierarchy, Table Per Concrete
+Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
 
   ### Installation
 
