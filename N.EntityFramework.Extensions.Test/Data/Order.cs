@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace N.EntityFramework.Extensions.Test.Data
 {
@@ -8,9 +10,13 @@ namespace N.EntityFramework.Extensions.Test.Data
         public long Id { get; set; }
         public string ExternalId { get; set; }
         public decimal Price { get; set; }
+        public DateTime AddedDateTime { get; set; }
+        public DateTime? ModifiedDateTime { get; set; }
+        public bool Active { get; set; }
         public Order()
         {
-
+            AddedDateTime = DateTime.UtcNow;
+            Active = true;
         }
     }
 }

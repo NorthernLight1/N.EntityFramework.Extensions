@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Core.Objects;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -15,10 +17,12 @@ namespace N.EntityFramework.Extensions.Sql
         {
             get { return this.ToString(); }
         }
+        public SqlParameter[] Parameters { get; private set; }
         public List<SqlClause> Clauses { get; private set; }
-        private SqlBuilder(string sql)
+        private SqlBuilder(string sql, SqlParameter[] parameters = null)
         {
             Clauses = new List<SqlClause>();
+            Parameters = parameters;
             Initialize(sql);
         }
 
@@ -81,6 +85,18 @@ namespace N.EntityFramework.Extensions.Sql
         public static SqlBuilder Parse(string sql)
         {
             return new SqlBuilder(sql);
+        }
+        public static SqlBuilder Parse<T>(string sql, ObjectQuery<T> objectQuery)
+        {
+            var sqlParameters = new List<SqlParameter>();
+            if (objectQuery != null)
+            {
+                foreach (var parameter in objectQuery.Parameters)
+                {
+                    sqlParameters.Add(new SqlParameter(parameter.Name, parameter.Value));
+                }
+            }
+            return new SqlBuilder(sql, sqlParameters.ToArray());
         }
         public void ChangeToDelete(string expression)
         {
