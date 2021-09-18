@@ -691,6 +691,36 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
         }
         [TestMethod]
+        public void DeleteFromQuery_With_DateTime()
+        {
+            var dbContext = SetupDbContext(true);
+            int oldTotal = dbContext.Orders.Count();
+            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            int rowsToDelete = dbContext.Orders.Where(o => o.ModifiedDateTime != null && o.ModifiedDateTime >= dateTime).Count();
+            int rowsDeleted = dbContext.Orders.Where(o => o.ModifiedDateTime != null && o.ModifiedDateTime >= dateTime)
+                .DeleteFromQuery();
+            int newTotal = dbContext.Orders.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
+            Assert.IsTrue(rowsDeleted == rowsToDelete, "The number of rows deleted must match the count of the rows that matched in the database");
+            Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
+        }
+        [TestMethod]
+        public void DeleteFromQuery_With_DifferentValues()
+        {
+            var dbContext = SetupDbContext(true);
+            int oldTotal = dbContext.Orders.Count();
+            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            var orders = dbContext.Orders.Where(o => o.Id == 1 && o.Active && o.ModifiedDateTime >= dateTime);
+            int rowsToDelete = orders.Count();
+            int rowsDeleted = orders.DeleteFromQuery();
+            int newTotal = dbContext.Orders.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
+            Assert.IsTrue(rowsDeleted == rowsToDelete, "The number of rows deleted must match the count of the rows that matched in the database");
+            Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
+        }
+        [TestMethod]
         public void Fetch()
         {
             var dbContext = SetupDbContext(true);
@@ -717,10 +747,30 @@ namespace N.EntityFramework.Extensions.Test.Tests
             string tableName = "OrdersUnderTen";
             int oldSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             //int oldTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
-            int rowsInserted = dbContext.Orders.Where(o => o.Price < 10M).InsertFromQuery(tableName, o => new { o.Price, o.Id });
+            int rowsInserted = dbContext.Orders.Where(o => o.Price < 10M).InsertFromQuery(tableName, o => new { o.Price, o.Id, o.AddedDateTime });
             int newSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             int newTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
 
+            Assert.IsTrue(oldSourceTotal > 0, "There should be existing data in the source table");
+            Assert.IsTrue(oldSourceTotal == newSourceTotal, "There should not be any change in the count of rows in the source table");
+            Assert.IsTrue(rowsInserted == oldSourceTotal, "The number of records inserted  must match the count of the source table");
+            //Assert.IsTrue(rowsInserted == newTargetTotal, "The different in count in the target table before and after the insert must match the total row inserted");
+        }
+        [TestMethod]
+        public void InsertFromQuery_With_DateTime()
+        {
+            var dbContext = SetupDbContext(true);
+            string tableName = "OrdersLast30Days";
+            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            int oldTotal = dbContext.Orders.Count();
+            int oldSourceTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
+            //int oldTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
+            int rowsInserted = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).InsertFromQuery(tableName, 
+                o => new { o.Id, o.ExternalId, o.Price, o.AddedDateTime, o.ModifiedDateTime });
+            int newSourceTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
+            int newTargetTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).UsingTable(tableName).Count();
+
+            Assert.IsTrue(oldTotal > oldSourceTotal, "The total should be greater then the number of rows selected from the source table");
             Assert.IsTrue(oldSourceTotal > 0, "There should be existing data in the source table");
             Assert.IsTrue(oldSourceTotal == newSourceTotal, "There should not be any change in the count of rows in the source table");
             Assert.IsTrue(rowsInserted == oldSourceTotal, "The number of records inserted  must match the count of the source table");
@@ -884,15 +934,15 @@ namespace N.EntityFramework.Extensions.Test.Tests
         public void UpdateFromQuery_With_DateTime()
         {
             var dbContext = SetupDbContext(true);
+            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            DateTime now = DateTime.UtcNow;
 
-            var now = DateTime.Now;
+            int oldTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
+            int rowUpdated = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).UpdateFromQuery(o => new Order { ModifiedDateTime = now });
+            int newTotal = dbContext.Orders.Where(o => o.ModifiedDateTime == now).Count();
 
-            int oldTotal = dbContext.Articles.Where(a => a.Updated == null).Count();
-            int rowUpdated = dbContext.Articles.Where(a => a.Updated == null).UpdateFromQuery(o => new Article { Updated = now });
-            int newTotal = dbContext.Articles.Where(a => a.Updated == null).Count();
-
-            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Updated == null)");
-            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Updated == null)");
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Orders added in last 30 days)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Orders added in last 30 days)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
         [TestMethod]
@@ -931,6 +981,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
         private TestDbContext SetupDbContext(bool populateData)
         {
             TestDbContext dbContext = new TestDbContext();
+            dbContext.Database.CreateIfNotExists();
             dbContext.Orders.DeleteFromQuery();
             dbContext.Articles.DeleteFromQuery();
             dbContext.Database.ClearTable("TphPeople");
@@ -942,7 +993,14 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 int id = 1;
                 for (int i = 0; i < 2050; i++)
                 {
-                    orders.Add(new Order { Id = id, ExternalId = string.Format("id-{0}", i), Price = 1.25M });
+                    DateTime addedDateTime = DateTime.UtcNow.AddDays(-id);
+                    orders.Add(new Order { 
+                        Id = id, 
+                        ExternalId = string.Format("id-{0}", i), 
+                        Price = 1.25M,
+                        AddedDateTime = addedDateTime,
+                        ModifiedDateTime = addedDateTime.AddHours(3)
+                    });
                     id++;
                 }
                 for (int i = 0; i < 1050; i++)

@@ -9,6 +9,7 @@ using System.Data.Common;
 using System.Data.Entity;
 using System.Data.Entity.Core.Mapping;
 using System.Data.Entity.Core.Metadata.Edm;
+using System.Data.Entity.Core.Objects;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Infrastructure.Interception;
 using System.Data.SqlClient;
@@ -101,9 +102,8 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    string stagingTableName = GetStagingTableName(tableMapping, true, dbConnection);
+                    string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    //string[] columnNames = tableMapping.Columns.Where(o => options.KeepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
                     string[] columnNames = tableMapping.GetColumns(options.KeepIdentity);
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
@@ -522,9 +522,11 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql);
+                    var internalQuery = dbQuery.GetPrivateFieldValue("_internalQuery");
+                    var objectQuery = internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
+                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql, objectQuery);
                     sqlQuery.ChangeToDelete("[Extent1]");
-                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
+                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, sqlQuery.Parameters, commandTimeout);
                     dbTransaction.Commit();
                 }
                 catch (Exception)
@@ -556,18 +558,20 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql);
+                    var internalQuery = dbQuery.GetPrivateFieldValue("_internalQuery");
+                    var objectQuery = internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
+                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql, objectQuery);
                     if (SqlUtil.TableExists(tableName, dbConnection, dbTransaction))
                     {
                         sqlQuery.ChangeToInsert(tableName, insertObjectExpression);
                         SqlUtil.ToggleIdentityInsert(true, tableName, dbConnection, dbTransaction);
-                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
+                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, sqlQuery.Parameters, commandTimeout);
                         SqlUtil.ToggleIdentityInsert(false, tableName, dbConnection, dbTransaction);
                     }
                     else
                     {
                         sqlQuery.Clauses.First().InputText += string.Format(" INTO {0}", tableName);
-                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
+                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, sqlQuery.Parameters, commandTimeout);
                     }
 
                     dbTransaction.Commit();
@@ -742,10 +746,12 @@ namespace N.EntityFramework.Extensions
             {
                 try
                 {
-                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql);
+                    var internalQuery = dbQuery.GetPrivateFieldValue("_internalQuery");
+                    var objectQuery = internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
+                    var sqlQuery = SqlBuilder.Parse(dbQuery.Sql, objectQuery);
                     string setSqlExpression = updateExpression.ToSqlUpdateSetExpression("Extent1");
                     sqlQuery.ChangeToUpdate("[Extent1]", setSqlExpression);
-                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, commandTimeout);
+                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, sqlQuery.Parameters, commandTimeout);
                     dbTransaction.Commit();
                 }
                 catch (Exception)
