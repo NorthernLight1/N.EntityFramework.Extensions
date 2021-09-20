@@ -49,7 +49,7 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   }
   dbcontext.BulkUpdate(products);
   ```
-  **BulkMerge() - Performs a merge operation with a large number of entities
+  **BulkMerge() - Performs a merge operation with a large number of entities**
   ```
   var dbcontext = new MyDbContext();
   var products = new List<Product>();
