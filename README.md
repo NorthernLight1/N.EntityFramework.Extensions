@@ -23,7 +23,7 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
 
  ## Usage
    
- **BulkInsert()**  
+ **BulkInsert() - Performs a insert operation with a large number of entities**  
    ```
   var dbcontext = new MyDbContext();  
   var orders = new List<Order>();  
@@ -33,13 +33,13 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   }  
   dbcontext.BulkInsert(orders);  
  ```
-  **BulkDelete()**  
+  **BulkDelete() - Performs a delete operation with a large number of entities**  
   ```
   var dbcontext = new MyDbContext();  
   var orders = dbcontext.Orders.Where(o => o.TotalPrice < 5.35M);  
   dbcontext.BulkDelete(orders);
   ```
-  **BulkUpdate()**  
+  **BulkUpdate() - Performs a update operation with a large number of entities**  
   ```
   var dbcontext = new MyDbContext();  
   var products = dbcontext.Products.Where(o => o.Price < 5.35M);
@@ -49,7 +49,7 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   }
   dbcontext.BulkUpdate(products);
   ```
-  **BulkMerge()**  
+  **BulkMerge() - Performs a merge operation with a large number of entities
   ```
   var dbcontext = new MyDbContext();
   var products = new List<Product>();
@@ -63,7 +63,7 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   products.Add(new Product { Name="Shirt", Price=20.95M });
   dbcontext.BulkMerge(products);
   ```
-   **BulkSync() - Performs a full sync on the target databse. Any entities that do not exists in the source list will be deleted**
+   **BulkSync() - Performs a sync operation with a large number of entities. By default any entities that do not exists in the source list will be deleted, but this can be disalbed in the options.**
   ```
   var dbcontext = new MyDbContext();
   var products = new List<Product>();
@@ -91,7 +91,7 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   );
   dbcontext.BulkUpdate(products);
   ```
-  **DeleteFromQuery()**  
+  **DeleteFromQuery() - Deletes records from the database using a LINQ query without loading data in the context**  
    ``` 
   var dbcontext = new MyDbContext(); 
   
@@ -101,7 +101,7 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   //This will delete all products that are under $5.35  
   dbcontext.Products.Where(x => x.Price < 5.35M).DeleteFromQuery()  
 ```
-  **InsertFromQuery()**  
+  **InsertFromQuery() - Inserts records from the database using a LINQ query without loading data in the context**  
    ``` 
   var dbcontext = new MyDbContext(); 
   
@@ -109,7 +109,7 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   //insert it into the ProductsUnderTen table
   dbcontext.Products.Where(x => x.Price < 10M).InsertFromQuery("ProductsUnderTen", o => new { o.Id, o.Price });
 ```
-  **UpdateFromQuery()**  
+  **UpdateFromQuery() - Updates records from the database using a LINQ query without loading data in the context**  
    ``` 
   var dbcontext = new MyDbContext(); 
   
