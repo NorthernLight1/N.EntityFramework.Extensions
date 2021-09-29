@@ -108,15 +108,16 @@ namespace N.EntityFramework.Extensions.Sql
                 sqlClause.InputText = expression;
             }
         }
-        public void ChangeToUpdate(string updateExpression, string setExpression)
+        public void ChangeToUpdate<T>(string tableName, Expression<Func<T,T>> updateExpression)
         {
             Validate();
+            string setSqlExpression = updateExpression.ToSqlUpdateSetExpression(tableName);
             var sqlClause = Clauses.FirstOrDefault();
             if (sqlClause != null)
             {
                 sqlClause.Name = "UPDATE";
-                sqlClause.InputText = updateExpression;
-                Clauses.Insert(1, new SqlClause { Name = "SET", InputText = setExpression });
+                sqlClause.InputText = tableName;
+                Clauses.Insert(1, new SqlClause { Name = "SET", InputText = setSqlExpression });
             }
         }
         internal void ChangeToInsert<T>(string tableName, Expression<Func<T, object>> insertObjectExpression)

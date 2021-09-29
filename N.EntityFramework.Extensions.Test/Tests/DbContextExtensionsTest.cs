@@ -721,16 +721,39 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
         }
         [TestMethod]
-        public void Fetch()
+        public void Fetch_With_Decimal()
         {
             var dbContext = SetupDbContext(true);
             int batchSize = 1000;
             int batchCount = 0;
             int totalCount = 0;
-            int expectedTotalCount = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            var orders = dbContext.Orders.Where(o => o.Price < 10M);
+            int expectedTotalCount = orders.Count();
             int expectedBatchCount = (int)Math.Ceiling(expectedTotalCount / (decimal)batchSize);
 
-            dbContext.Orders.Where(o => o.Price < 10M).Fetch(result =>
+            orders.Fetch(result =>
+            {
+                batchCount++;
+                totalCount += result.Results.Count();
+            }, options => { options.BatchSize = 1000; });
+
+            Assert.IsTrue(expectedTotalCount > 0, "There must be orders in database that match this condition");
+            Assert.IsTrue(expectedTotalCount == totalCount, "The total number of rows fetched must match the count of existing rows in database");
+            Assert.IsTrue(expectedBatchCount == batchCount, "The total number of batches fetched must match what is expected");
+        }
+        [TestMethod]
+        public void Fetch_With_DateTime()
+        {
+            var dbContext = SetupDbContext(true);
+            int batchSize = 1000;
+            int batchCount = 0;
+            int totalCount = 0;
+            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            var orders = dbContext.Orders.Where(o => o.AddedDateTime <= dateTime);
+            int expectedTotalCount = orders.Count();
+            int expectedBatchCount = (int)Math.Ceiling(expectedTotalCount / (decimal)batchSize);
+
+            orders.Fetch(result =>
             {
                 batchCount++;
                 totalCount += result.Results.Count();
@@ -747,7 +770,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             string tableName = "OrdersUnderTen";
             int oldSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             //int oldTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
-            int rowsInserted = dbContext.Orders.Where(o => o.Price < 10M).InsertFromQuery(tableName, o => new { o.Price, o.Id, o.AddedDateTime });
+            int rowsInserted = dbContext.Orders.Where(o => o.Price < 10M).InsertFromQuery(tableName, o => new { o.Price, o.Id, o.AddedDateTime, o.Active });
             int newSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
             int newTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
 
@@ -766,7 +789,7 @@ namespace N.EntityFramework.Extensions.Test.Tests
             int oldSourceTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
             //int oldTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
             int rowsInserted = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).InsertFromQuery(tableName, 
-                o => new { o.Id, o.ExternalId, o.Price, o.AddedDateTime, o.ModifiedDateTime });
+                o => new { o.Id, o.ExternalId, o.Price, o.AddedDateTime, o.ModifiedDateTime, o.Active });
             int newSourceTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
             int newTargetTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).UsingTable(tableName).Count();
 
@@ -903,21 +926,49 @@ namespace N.EntityFramework.Extensions.Test.Tests
             int rowUpdated = dbContext.Orders.Where(a => a.Price < 10).UpdateFromQuery(a => new Order { Price = priceStart + priceUpdate });
             int newTotal = dbContext.Orders.Count(o => o.Price < 10);
 
-            Assert.IsTrue(oldTotal > 0, "There must be articles in database that match this condition (Price < 10)");
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < 10)");
             Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Price < 10)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
-
         [TestMethod]
-        public void UpdateFromQuery_With_Expression_Accessing_Previous_Value_Fails()
+        public void UpdateFromQuery_With_MethodCall()
         {
             var dbContext = SetupDbContext(true);
-            decimal priceUpdate = 0.34M;
 
-            // Access to previous value creates an exception as the value must be present when we create the SQL code.
-            Assert.ThrowsException<InvalidOperationException>(() => dbContext.Orders.Where(a => a.Price < 10).UpdateFromQuery(a => new Order { Price = a.Price + priceUpdate }));
+            int oldTotal = dbContext.Orders.Count(a => a.Price < 10);
+            int rowUpdated = dbContext.Orders.Where(a => a.Price < 10).UpdateFromQuery(o => new Order { Price = Math.Ceiling((o.Price + 10.5M) * 3 / 1) });
+            int newTotal = dbContext.Orders.Count(o => o.Price < 10);
+
+            Assert.IsTrue(oldTotal > 0, "There must be order in database that match this condition (Price < 10)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Price < 10)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
+        [TestMethod]
+        public void UpdateFromQuery_With_StringConcatenation_Implicit()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.ExternalId == null);
+            int oldTotal = orders.Count();
+            int rowUpdated = orders.UpdateFromQuery(o => new Order { ExternalId = Convert.ToString(o.Id) + "Test" });
+            int newTotal = orders.Count();
 
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (ExternalId == null)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (ExternalId == null)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
+        [TestMethod]
+        public void UpdateFromQuery_With_StringAndNumberConcat()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.ExternalId == null);
+            int oldTotal = orders.Count();
+            int rowUpdated = orders.UpdateFromQuery(o => new Order { ExternalId = Convert.ToString(o.Id) + "Test" });
+            int newTotal = orders.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (ExternalId == null)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (ExternalId == null)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
         [TestMethod]
         public void UpdateFromQuery_With_String_Containing_Apostrophe()
         {

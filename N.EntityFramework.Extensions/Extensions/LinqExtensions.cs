@@ -10,19 +10,82 @@ namespace N.EntityFramework.Extensions
 {
     static class LinqExtensions
     {
-        internal static object GetExpressionValue(MemberBinding binding)
+        internal static string GetExpressionValueAsString(MemberBinding binding)
         {
-            if (binding.GetPrivateFieldValue("Expression") is ConstantExpression constantExpression)
-            {
-                return constantExpression.Value;
-            }
-
-            return Expression.Lambda(binding.GetPrivateFieldValue("Expression") as Expression).Compile().DynamicInvoke();
+            return GetExpressionValueAsString(binding.GetPrivateFieldValue("Expression") as Expression);
         }
-        internal static string GetExpressionValueAsString<T>(MemberBinding binding)
+        internal static string GetExpressionValueAsString(Expression expression)
         {
-            var value = GetExpressionValue(binding);
+            if (expression.NodeType == ExpressionType.Constant)
+            {
+                return ConvertToSqlValue((expression as ConstantExpression).Value);
+            }
+            else if (expression.NodeType == ExpressionType.MemberAccess)
+            {
+                if (expression.GetPrivateFieldValue("Expression") is ParameterExpression parameterExpression)
+                {
+                    return Expression.Lambda(expression).Body.ToString();
+                }
+                else
+                {
+                    return ConvertToSqlValue(Expression.Lambda(expression).Compile().DynamicInvoke());
+                }
+            }
+            else if (expression.NodeType == ExpressionType.Convert)
+            {
+                return ConvertToSqlValue(Expression.Lambda(expression).Compile().DynamicInvoke());
+            }
+            else if (expression.NodeType == ExpressionType.Call)
+            {
+                var methodCallExpression = expression as MethodCallExpression;
+                List<string> argValues = new List<string>();
+                foreach(var argument in methodCallExpression.Arguments)
+                {
+                    argValues.Add(GetExpressionValueAsString(argument));
+                }
+                string methodFormat;
+                switch(methodCallExpression.Method.Name)
+                {
+                    case "ToString":
+                        methodFormat = string.Format("CONVERT(VARCHAR,{0})", argValues[0]);
+                        break;
+                    default:
+                        methodFormat = string.Format("{0}({1})", methodCallExpression.Method.Name, string.Join(",", argValues));
+                        break;
+                }
+                return methodFormat;
+            }
+            else
+            {
+                var leftExpression = expression.GetPrivateFieldValue("Left") as Expression;
+                var rightExpression = expression.GetPrivateFieldValue("Right") as Expression;
+                string leftValue = GetExpressionValueAsString(leftExpression);
+                string rightValue = GetExpressionValueAsString(rightExpression);
+                string joinValue = string.Empty;
+                switch (expression.NodeType)
+                {
+                    case ExpressionType.Add:
+                        joinValue = "+";
+                        break;
+                    case ExpressionType.Subtract:
+                        joinValue = "-";
+                        break;
+                    case ExpressionType.Multiply:
+                        joinValue = "*";
+                        break;
+                    case ExpressionType.Divide:
+                        joinValue = "/";
+                        break;
+                    case ExpressionType.Modulo:
+                        joinValue = "%";
+                        break;
+                }
+                return string.Format("({0} {1} {2})", leftValue, joinValue, rightValue);
+            }
+        }
 
+        private static string ConvertToSqlValue(object value)
+        {
             if (value == null)
                 return "NULL";
             if (value is string str)
@@ -36,6 +99,7 @@ namespace N.EntityFramework.Extensions
 
             throw new NotImplementedException("Unhandled data type.");
         }
+
         public static List<string> GetObjectProperties<T>(this Expression<Func<T, object>> expression)
         {
             return expression == null ? new List<string>() : expression.Body.Type.GetProperties().Select(o => o.Name).ToList();
@@ -60,9 +124,10 @@ namespace N.EntityFramework.Extensions
             var memberInitExpression = expression.Body as MemberInitExpression;
             foreach (var binding in memberInitExpression.Bindings)
             {
-                string constantValue = GetExpressionValueAsString<T>(binding);
-
-                setValues.Add(string.Format("[{0}].[{1}]={2}", tableName, binding.Member.Name, constantValue));
+                string expValue = GetExpressionValueAsString(binding);
+                expValue = expValue.Replace(string.Format("{0}.", expression.Parameters.First().Name),
+                    string.Format("[{0}].", tableName));
+                setValues.Add(string.Format("[{0}].[{1}]={2}", tableName, binding.Member.Name, expValue));
             }
             return string.Join(",", setValues);
         }

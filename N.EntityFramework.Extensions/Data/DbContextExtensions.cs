@@ -411,7 +411,12 @@ namespace N.EntityFramework.Extensions
             if (dbConnection.State == ConnectionState.Closed)
                 dbConnection.Open();
 
-            var command = new SqlCommand(dbQuery.Sql, dbConnection);
+            var internalQuery = dbQuery.GetPrivateFieldValue("_internalQuery");
+            var objectQuery = internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
+            var sqlQuery = SqlBuilder.Parse(dbQuery.Sql, objectQuery);
+            var command = new SqlCommand(sqlQuery.Sql, dbConnection);
+            command.Parameters.AddRange(sqlQuery.Parameters);
+
             var reader = command.ExecuteReader();
 
             List<PropertyInfo> propertySetters = new List<PropertyInfo>();
@@ -749,8 +754,7 @@ namespace N.EntityFramework.Extensions
                     var internalQuery = dbQuery.GetPrivateFieldValue("_internalQuery");
                     var objectQuery = internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
                     var sqlQuery = SqlBuilder.Parse(dbQuery.Sql, objectQuery);
-                    string setSqlExpression = updateExpression.ToSqlUpdateSetExpression("Extent1");
-                    sqlQuery.ChangeToUpdate("[Extent1]", setSqlExpression);
+                    sqlQuery.ChangeToUpdate("Extent1", updateExpression);
                     rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, sqlQuery.Parameters, commandTimeout);
                     dbTransaction.Commit();
                 }
