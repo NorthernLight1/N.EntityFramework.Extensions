@@ -838,8 +838,8 @@ namespace N.EntityFramework.Extensions
                             .GetItems<EntityContainer>(DataSpace.CSpace)
                                   .Single()
                                   .EntitySets
-                                  .Single(s => s.ElementType.FullName == entityType.FullName 
-                                    || (entityType.BaseType != null && s.ElementType.FullName == entityType.BaseType.FullName));
+                                  .Single(s => (s.ElementType.Name == entityType.Name)
+                                    || (entityType.BaseType != null && s.ElementType.Name == entityType.BaseType.Name));
 
             // Find the mapping between conceptual and storage model for this entity set
             var mappings = metadata.GetItems<EntityContainerMapping>(DataSpace.CSSpace)
@@ -851,7 +851,7 @@ namespace N.EntityFramework.Extensions
             var columns = new List<ScalarPropertyMapping>();
             var conditions = new List<ConditionPropertyMapping>();
             foreach (var mapping in mappings.EntityTypeMappings
-                .Where(o => o.EntityType == null || o.EntityType.FullName == entityType.FullName))
+                .Where(o => o.EntityType == null || o.EntityType.Name == entityType.Name))
             {
                 foreach(var propertyMapping in mapping.Fragments.Single().PropertyMappings.OfType<ScalarPropertyMapping>().ToList())
                 {

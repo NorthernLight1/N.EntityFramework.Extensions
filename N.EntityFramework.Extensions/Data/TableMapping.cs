@@ -23,7 +23,7 @@ namespace N.EntityFramework.Extensions
         public TableMapping(EntitySet entitySet, EntityType entityType, EntitySetMapping mapping, 
             List<ScalarPropertyMapping> columns, List<ConditionPropertyMapping> conditions)
         {
-            var storeEntitySet = mapping.EntityTypeMappings.First(o => o.EntityType != null && o.EntityType.FullName == entityType.FullName).Fragments.Single().StoreEntitySet;
+            var storeEntitySet = mapping.EntityTypeMappings.First(o => o.EntityType != null && o.EntityType.Name == entityType.Name).Fragments.Single().StoreEntitySet;
             
             EntitySet = entitySet;
             EntityType = entityType;
