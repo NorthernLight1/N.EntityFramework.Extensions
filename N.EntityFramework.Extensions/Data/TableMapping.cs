@@ -37,9 +37,14 @@ namespace N.EntityFramework.Extensions
         public string[] GetColumns(bool keepIdentity = false)
         {
             var columns = new List<string>();
-            columns.AddRange(this.Columns.Where(o => keepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name));
-            columns.AddRange(this.Conditions.Select(o => o.Column.Name));
+            columns.AddRange(this.Columns.Where(o => keepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => FormatColumnName(o.Column.Name)));
+            columns.AddRange(this.Conditions.Select(o => FormatColumnName(o.Column.Name)));
             return columns.ToArray();
+        }
+
+        private string FormatColumnName(string name)
+        {
+            return string.Format("[{0}]", name);
         }
     }
 }
