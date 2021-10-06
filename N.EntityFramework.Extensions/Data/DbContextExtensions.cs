@@ -364,7 +364,7 @@ namespace N.EntityFramework.Extensions
                 {
                     string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.Columns.Where(o => !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    string[] columnNames = tableMapping.GetColumns();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
                     if(storeGeneratedColumnNames.Length == 0 && options.UpdateOnCondition == null)
