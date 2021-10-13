@@ -63,7 +63,9 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   products.Add(new Product { Name="Shirt", Price=20.95M });
   dbcontext.BulkMerge(products);
   ```
-   **BulkSync() - Performs a sync operation with a large number of entities. By default any entities that do not exists in the source list will be deleted, but this can be disalbed in the options.**
+   **BulkSync() - Performs a sync operation with a large number of entities.** 
+   
+   By default any entities that do not exists in the source list will be deleted, but this can be disabled in the options.
   ```
   var dbcontext = new MyDbContext();
   var products = new List<Product>();
