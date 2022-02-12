@@ -49,6 +49,25 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(newTotal == 0, "Must be 0 to indicate all records were deleted");
         }
         [TestMethod]
+        public void BulkDelete_With_Transaction()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.Price == 1.25M).ToList();
+            int rowsDeleted, newTotal = 0;
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                rowsDeleted = dbContext.BulkDelete(orders);
+                newTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
+                transaction.Rollback();
+            }
+            var rollbackTotal = dbContext.Orders.Count(o => o.Price == 1.25M);
+
+            Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price < $2)");
+            Assert.IsTrue(rowsDeleted == orders.Count, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newTotal == 0, "Must be 0 to indicate all records were deleted");
+            Assert.IsTrue(rollbackTotal == orders.Count, "The number of rows after the transacation has been rollbacked should match the original count");
+        }
+        [TestMethod]
         public void BulkDelete_Tpc()
         {
             var dbContext = SetupDbContext(true);
@@ -100,6 +119,29 @@ namespace N.EntityFramework.Extensions.Test.Tests
 
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
+        }
+        [TestMethod]
+        public void BulkInsert_With_Transaction()
+        {
+            var dbContext = SetupDbContext(false);
+            var orders = new List<Order>();
+            for (int i = 0; i < 20000; i++)
+            {
+                orders.Add(new Order { Id = i, Price = 1.57M });
+            }
+            int oldTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
+            int rowsInserted, newTotal;
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                rowsInserted = dbContext.BulkInsert(orders);
+                newTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
+                transaction.Rollback();
+            }
+            int rollbackTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
+
+            Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
+            Assert.IsTrue(rollbackTotal == oldTotal, "The number of rows after the transacation has been rollbacked should match the original count");
         }
         [TestMethod]
         public void BulkInsert_Tph()
@@ -327,6 +369,36 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
             Assert.IsTrue(areAddedOrdersMerged, "The orders that were added did not merge correctly");
             Assert.IsTrue(areUpdatedOrdersMerged, "The orders that were updated did not merge correctly");
+        }
+        [TestMethod]
+        public void BulkMerge_With_Transaction()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.Id <= 10000).OrderBy(o => o.Id).ToList();
+            int ordersToAdd = 5000;
+            int ordersToUpdate = orders.Count;
+            foreach (var order in orders)
+            {
+                order.Price = Convert.ToDecimal(order.Id + .25);
+            }
+            for (int i = 0; i < ordersToAdd; i++)
+            {
+                orders.Add(new Order { Id = 100000 + i, Price = 3.55M });
+            }
+            BulkMergeResult<Order> result;
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                result = dbContext.BulkMerge(orders);
+                transaction.Rollback();
+            }
+            int ordersUpdated = dbContext.Orders.Count(o => o.Id <= 10000 && o.Price == ((decimal)o.Id + .25M) && o.Price != 1.25M);
+            int ordersAdded = dbContext.Orders.Count(o => o.Id >= 100000);
+
+            Assert.IsTrue(result.RowsAffected == orders.Count(), "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(result.RowsUpdated == ordersToUpdate, "The number of rows updated must match");
+            Assert.IsTrue(result.RowsInserted == ordersToAdd, "The number of rows added must match");
+            Assert.IsTrue(ordersAdded == 0, "The number of rows added must equal 0 since transaction was rollbacked");
+            Assert.IsTrue(ordersUpdated == 0, "The number of rows updated must equal 0 since transaction was rollbacked");
         }
         [TestMethod]
         public void BulkMerge_Tpc()
@@ -609,6 +681,32 @@ namespace N.EntityFramework.Extensions.Test.Tests
             //Assert.IsTrue(entitiesWithChanges == 0, "There should be no pending Order entities with changes after BulkInsert completes");
         }
         [TestMethod]
+        public void BulkUpdate_With_Transaction()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.Price == 1.25M).OrderBy(o => o.Id).ToList();
+            long maxId = 0;
+            foreach (var order in orders)
+            {
+                order.Price = 2.35M;
+                maxId = order.Id;
+            }
+            int rowsUpdated, newOrders;
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                rowsUpdated = dbContext.BulkUpdate(orders);
+                newOrders = dbContext.Orders.Where(o => o.Price == 2.35M).Count();
+                transaction.Rollback();
+            }
+            int rollbackTotal = dbContext.Orders.Where(o => o.Price == 1.25M).Count();
+
+            Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
+            Assert.IsTrue(rowsUpdated == orders.Count, "The number of rows updated must match the count of entities that were retrieved");
+            Assert.IsTrue(newOrders == rowsUpdated, "The count of new orders must be equal the number of rows updated in the database.");
+            Assert.IsTrue(rollbackTotal == orders.Count, "The number of rows after the transacation has been rollbacked should match the original count");
+            //Assert.IsTrue(entitiesWithChanges == 0, "There should be no pending Order entities with changes after BulkInsert completes");
+        }
+        [TestMethod]
         public void BulkUpdate_Tpc()
         {
             var dbContext = SetupDbContext(true);
@@ -721,6 +819,25 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
         }
         [TestMethod]
+        public void DeleteFromQuery_With_Transaction()
+        {
+            var dbContext = SetupDbContext(true);
+            int rowsDeleted;
+            int oldTotal = dbContext.Orders.Count();
+            var orders = dbContext.Orders.Where(o => o.Price <= 10);
+            int rowsToDelete = orders.Count();
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                rowsDeleted = orders.DeleteFromQuery();
+                transaction.Rollback();
+            }
+            int newTotal = dbContext.Orders.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < $10)");
+            Assert.IsTrue(rowsDeleted == orders.Count(), "The number of rows update must match the count of rows that match the condtion (Price < $10)");
+            Assert.IsTrue(newTotal == oldTotal, "The new count must match the old count since the transaction was rollbacked");
+        }
+        [TestMethod]
         public void Fetch_With_Decimal()
         {
             var dbContext = SetupDbContext(true);
@@ -785,19 +902,40 @@ namespace N.EntityFramework.Extensions.Test.Tests
             var dbContext = SetupDbContext(true);
             string tableName = "OrdersLast30Days";
             DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            var orders = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime);
             int oldTotal = dbContext.Orders.Count();
-            int oldSourceTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
-            //int oldTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
-            int rowsInserted = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).InsertFromQuery(tableName, 
+            int oldSourceTotal = orders.Count(); 
+
+            int rowsInserted = orders.InsertFromQuery(tableName, 
                 o => new { o.Id, o.ExternalId, o.Price, o.AddedDateTime, o.ModifiedDateTime, o.Active });
-            int newSourceTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
-            int newTargetTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).UsingTable(tableName).Count();
+
+            int newSourceTotal = orders.Count();
+            int newTargetTotal = orders.UsingTable(tableName).Count();
 
             Assert.IsTrue(oldTotal > oldSourceTotal, "The total should be greater then the number of rows selected from the source table");
             Assert.IsTrue(oldSourceTotal > 0, "There should be existing data in the source table");
             Assert.IsTrue(oldSourceTotal == newSourceTotal, "There should not be any change in the count of rows in the source table");
             Assert.IsTrue(rowsInserted == oldSourceTotal, "The number of records inserted  must match the count of the source table");
             //Assert.IsTrue(rowsInserted == newTargetTotal, "The different in count in the target table before and after the insert must match the total row inserted");
+        }
+        [TestMethod]
+        public void InsertFromQuery_With_Transaction()
+        {
+            var dbContext = SetupDbContext(true);
+            string tableName = "OrdersUnderTen";
+            int rowsInserted;
+            int oldSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                rowsInserted = dbContext.Orders.Where(o => o.Price < 10M).InsertFromQuery(tableName, o => new { o.Price, o.Id, o.AddedDateTime, o.Active });
+                transaction.Rollback();
+            }
+            int newSourceTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            int newTargetTotal = dbContext.Orders.Where(o => o.Price < 10M).UsingTable(tableName).Count();
+
+            Assert.IsTrue(oldSourceTotal > 0, "There must be orders in database that match this condition (Price < $10)");
+            Assert.IsTrue(rowsInserted == oldSourceTotal, "The number of rows update must match the count of rows that match the condtion (Price < $10)");
+            Assert.IsTrue(newSourceTotal == oldSourceTotal, "The new count must match the old count since the transaction was rollbacked");
         }
         [TestMethod]
         public void QueryToCsvFile()
@@ -874,6 +1012,25 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condtion (Price < $10)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
             Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
+        }
+        [TestMethod]
+        public void UpdateFromQuery_With_Transaction()
+        {
+            var dbContext = SetupDbContext(true);
+            int oldTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            int rowUpdated;
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                rowUpdated = dbContext.Orders.Where(o => o.Price < 10M).UpdateFromQuery(o => new Order { Price = 25.30M });
+                transaction.Rollback();
+            }
+            int newTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
+            int matchCount = dbContext.Orders.Where(o => o.Price == 25.30M).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < $10)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condtion (Price < $10)");
+            Assert.IsTrue(newTotal == oldTotal, "The new count must match the old count since the transaction was rollbacked");
+            Assert.IsTrue(matchCount == 0, "The match count must be equal to 0 since the transaction was rollbacked.");
         }
         [TestMethod]
         public void UpdateFromQuery_With_Different_Culture()
@@ -1062,11 +1219,6 @@ namespace N.EntityFramework.Extensions.Test.Tests
                 for (int i = 0; i < 2050; i++)
                 {
                     orders.Add(new Order { Id = id, Price = 1.25M });
-                    id++;
-                }
-                for (int i = 0; i < 6000; i++)
-                {
-                    orders.Add(new Order { Id = id, Price = 15.35M });
                     id++;
                 }
                 for (int i = 0; i < 6000; i++)
