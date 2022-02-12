@@ -118,4 +118,24 @@ Inheritance models supported: Table-Per-Hierarchy, Table-Per-Concrete
   //This will change all products priced at $5.35 to $5.75 
   dbcontext.Products.Where(x => x.Price == 5.35M).UpdateFromQuery(o => new Product { Price = 5.75M }) 
 ```
+
+## Options
+  **Transaction** 
+  
+  When using any of the following bulk data operations (BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, DeleteFromQuery, InsertFromQuery), if an external transaction exists, then it will be utilized.
+   
+   ``` 
+  var dbcontext = new MyDbContext(); 
+  var transaction = context.Database.BeginTransaction();
+  try
+  {
+      dbcontext.BulkInsert(orders);
+      transaction.Commit();
+  }
+  catch
+  {
+      transaction.Rollback();
+  }
+```
+
   
