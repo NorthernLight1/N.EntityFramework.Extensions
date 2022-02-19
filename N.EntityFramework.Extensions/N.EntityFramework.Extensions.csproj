@@ -7,7 +7,7 @@
     <Copyright>Copyright ©  2022</Copyright>
     <Description>Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile.
 
-Supports: TPC (Table Per Concrete), TPH (Table Per Hierarchy)</Description>
+Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hierarchy, Table-Per-Concrete)</Description>
     <PackageProjectUrl>https://github.com/NorthernLight1/N.EntityFramework.Extensions/</PackageProjectUrl>
     <Authors>NorthernLight1</Authors>
     <PackageTags>EntityFramework Extensions</PackageTags>
