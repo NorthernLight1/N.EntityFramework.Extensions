@@ -126,8 +126,8 @@ namespace N.EntityFramework.Extensions
             {
                 string expValue = GetExpressionValueAsString(binding);
                 expValue = expValue.Replace(string.Format("{0}.", expression.Parameters.First().Name),
-                    string.Format("[{0}].", tableName));
-                setValues.Add(string.Format("[{0}].[{1}]={2}", tableName, binding.Member.Name, expValue));
+                    string.Format("{0}.", tableName));
+                setValues.Add(string.Format("{0}.[{1}]={2}", tableName, binding.Member.Name, expValue));
             }
             return string.Join(",", setValues);
         }
