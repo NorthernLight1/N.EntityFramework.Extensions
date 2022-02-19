@@ -5,7 +5,6 @@ using N.EntityFramework.Extensions.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Data.Entity;
 using System.Data.Entity.Core.Mapping;
 using System.Data.Entity.Core.Metadata.Edm;
@@ -13,12 +12,10 @@ using System.Data.Entity.Core.Objects;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Infrastructure.Interception;
 using System.Data.SqlClient;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 namespace N.EntityFramework.Extensions
 {
@@ -385,16 +382,13 @@ namespace N.EntityFramework.Extensions
         }
         public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions options) where T : class, new()
         {
-            var dbQuery = querable as DbQuery<T>;
             var dbContext = querable.GetDbContext();
             var dbConnection = dbContext.GetSqlConnection();
             //Open datbase connection
             if (dbConnection.State == ConnectionState.Closed)
                 dbConnection.Open();
 
-            var internalQuery = dbQuery.GetPrivateFieldValue("_internalQuery");
-            var objectQuery = internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
-            var sqlQuery = SqlBuilder.Parse(dbQuery.Sql, objectQuery);
+            var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
             var command = new SqlCommand(sqlQuery.Sql, dbConnection);
             command.Parameters.AddRange(sqlQuery.Parameters);
 
@@ -554,21 +548,6 @@ namespace N.EntityFramework.Extensions
                 }
             }
             return rowAffected;
-        }
-        public static SqlQuery FromSqlQuery(this Database database, string sqlText, params object[] parameters)
-        { 
-            var dbConnection = database.Connection as SqlConnection;
-            return new SqlQuery(dbConnection, sqlText, parameters);
-        }
-        public static int ClearTable(this Database database, string tableName)
-        {
-            var dbConnection = database.Connection as SqlConnection;
-            return SqlUtil.ClearTable(tableName, dbConnection, null);
-        }
-        public static bool TableExists(this Database database, string tableName)
-        {
-            var dbConnection = database.Connection as SqlConnection;
-            return SqlUtil.TableExists(tableName, dbConnection, null);
         }
         public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath)
         {
@@ -735,6 +714,18 @@ namespace N.EntityFramework.Extensions
                     Connection = dbContext.GetSqlConnection()
                 });
             return querable;
+        }
+        public static void Clear<T>(this DbSet<T> dbSet) where T : class
+        {
+            var dbContext = dbSet.GetDbContext();
+            var tableMapping = dbContext.GetTableMapping(typeof(T));
+            dbContext.Database.ClearTable(tableMapping.FullQualifedTableName);
+        }
+        public static void Truncate<T>(this DbSet<T> dbSet) where T : class
+        {
+            var dbContext = dbSet.GetDbContext();
+            var tableMapping = dbContext.GetTableMapping(typeof(T));
+            dbContext.Database.TruncateTable(tableMapping.FullQualifedTableName);
         }
         internal static DbContext GetDbContext<T>(this IQueryable<T> querable)
         {

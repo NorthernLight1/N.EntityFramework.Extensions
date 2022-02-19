@@ -19,10 +19,10 @@ namespace N.EntityFramework.Extensions.Sql
         }
         public SqlParameter[] Parameters { get; private set; }
         public List<SqlClause> Clauses { get; private set; }
-        private SqlBuilder(string sql, SqlParameter[] parameters = null)
+        private SqlBuilder(string sql, SqlParameter[] parameters = default)
         {
             Clauses = new List<SqlClause>();
-            Parameters = parameters;
+            Parameters = parameters == null ? new SqlParameter[0] : parameters;
             Initialize(sql);
         }
 
@@ -62,6 +62,12 @@ namespace N.EntityFramework.Extensions.Sql
         public string Count()
         {
             return string.Format("SELECT COUNT(*) FROM ({0}) s", string.Join("\r\n", Clauses.Where(o => o.Name != "ORDER BY").Select(o => o.ToString())));
+        }
+        public String GetTableAlias()
+        {
+            var sqlFromClause = Clauses.First(o => o.Name == "FROM");
+            var startIndex = sqlFromClause.InputText.LastIndexOf(" AS ");
+            return startIndex > 0 ? sqlFromClause.InputText.Substring(startIndex + 4) : "";
         }
         public override string ToString()
         {

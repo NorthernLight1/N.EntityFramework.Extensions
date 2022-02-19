@@ -41,6 +41,10 @@ namespace N.EntityFramework.Extensions
             columns.AddRange(this.Conditions.Select(o => FormatColumnName(o.Column.Name)));
             return columns.ToArray();
         }
+        public IEnumerable<string> GetPrimaryKeyColumns()
+        {
+            return Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name);
+        }
 
         private string FormatColumnName(string name)
         {
