@@ -55,12 +55,12 @@ namespace N.EntityFramework.Extensions
                         throw new InvalidDataException("BulkDelete requires that the entity have a primary key or the Options.DeleteOnCondition must be set.");
 
 
-                    SqlUtil.CloneTable(destinationTableName, stagingTableName, keyColumnNames, dbConnection, transaction);
+                    context.Database.CloneTable(destinationTableName, stagingTableName, keyColumnNames);
                     BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlBulkCopyOptions.KeepIdentity, false, false);
                     string deleteSql = string.Format("DELETE t FROM {0} s JOIN {1} t ON {2}", stagingTableName, destinationTableName, 
                         CommonUtil<T>.GetJoinConditionSql(options.DeleteOnCondition, keyColumnNames));
                     rowsAffected = SqlUtil.ExecuteSql(deleteSql, dbConnection, transaction, options.CommandTimeout);
-                    SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
+                    context.Database.DropTable(stagingTableName);
                     dbTransactionContext.Commit();
                 }
                 catch (Exception)
@@ -86,9 +86,6 @@ namespace N.EntityFramework.Extensions
             var tableMapping = context.GetTableMapping(typeof(T));
             var dbConnection = context.GetSqlConnection();
 
-            if (dbConnection.State == ConnectionState.Closed)
-                dbConnection.Open();
-
             using (var dbTransactionContext = new DbTransactionContext(context))
             {
                 try
@@ -96,13 +93,13 @@ namespace N.EntityFramework.Extensions
                     var transaction = dbTransactionContext.CurrentTransaction;
                     string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.GetColumns(options.KeepIdentity);
+                    IEnumerable<string> columnNames = tableMapping.GetColumns(options.KeepIdentity);
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
-                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.InternalId_ColumnName);
+                    context.Database.CloneTable(destinationTableName, stagingTableName, null, Common.Constants.InternalId_ColumnName);
                     var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
 
-                    IEnumerable<string> columnsToInsert = columnNames;
+                    IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames);
 
                     List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
@@ -145,7 +142,7 @@ namespace N.EntityFramework.Extensions
                         }
                     }
 
-                    SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
+                    context.Database.DropTable(stagingTableName);
 
                     //ClearEntityStateToUnchanged(context, entities);
                     dbTransactionContext.Commit();
@@ -237,17 +234,17 @@ namespace N.EntityFramework.Extensions
                     var transaction = dbTransactionContext.CurrentTransaction;
                     string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.GetColumns();
+                    IEnumerable<string> columnNames = tableMapping.GetColumns();
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
                     if (storeGeneratedColumnNames.Length == 0 && options.MergeOnCondition == null)
                         throw new InvalidDataException("BulkMerge requires that the entity have a primary key or the Options.MergeOnCondition must be set.");
 
-                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction, Common.Constants.InternalId_ColumnName);
+                    context.Database.CloneTable(destinationTableName, stagingTableName, null, Common.Constants.InternalId_ColumnName);
                     var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
 
-                    IEnumerable<string> columnsToInsert = columnNames.Where(o => !options.GetIgnoreColumnsOnInsert().Contains(o));
-                    IEnumerable<string> columnstoUpdate = columnNames.Where(o => !options.GetIgnoreColumnsOnUpdate().Contains(o)).Select(o => string.Format("t.{0}=s.{0}", o));
+                    IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames.Where(o => !options.GetIgnoreColumnsOnInsert().Contains(o)));
+                    IEnumerable<string> columnstoUpdate = CommonUtil.FormatColumns(columnNames.Where(o => !options.GetIgnoreColumnsOnUpdate().Contains(o))).Select(o => string.Format("t.{0}=s.{0}", o));
                     List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
                     Type entityType = typeof(T);
@@ -300,7 +297,7 @@ namespace N.EntityFramework.Extensions
                         else if (action == SqlMergeAction.Update) rowsUpdated++;
                         else if (action == SqlMergeAction.Delete) rowsDeleted++;
                     }
-                    SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
+                    context.Database.DropTable(stagingTableName);
 
                     //ClearEntityStateToUnchanged(context, entities);
                     dbTransactionContext.Commit();
@@ -336,9 +333,6 @@ namespace N.EntityFramework.Extensions
             var tableMapping = context.GetTableMapping(typeof(T));
             var dbConnection = context.GetSqlConnection();
 
-            if (dbConnection.State == ConnectionState.Closed)
-                dbConnection.Open();
-
             using (var dbTransactionContext = new DbTransactionContext(context))
             {
                 try
@@ -346,23 +340,23 @@ namespace N.EntityFramework.Extensions
                     var transaction = dbTransactionContext.CurrentTransaction;
                     string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.GetColumns();
+                    IEnumerable<string> columnNames = tableMapping.GetColumns(); 
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
 
                     if(storeGeneratedColumnNames.Length == 0 && options.UpdateOnCondition == null)
                         throw new InvalidDataException("BulkUpdate requires that the entity have a primary key or the Options.UpdateOnCondition must be set.");
 
-                    SqlUtil.CloneTable(destinationTableName, stagingTableName, null, dbConnection, transaction);
+                    context.Database.CloneTable(destinationTableName, stagingTableName);
                     BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity);
 
-                    IEnumerable<string> columnstoUpdate = columnNames.Where(o => !options.IgnoreColumnsOnUpdate.GetObjectProperties().Contains(o));
+                    IEnumerable<string> columnstoUpdate = CommonUtil.FormatColumns(columnNames.Where(o => !options.IgnoreColumnsOnUpdate.GetObjectProperties().Contains(o)));
 
                     string updateSetExpression = string.Join(",", columnstoUpdate.Select(o => string.Format("t.{0}=s.{0}", o)));
                     string updateSql = string.Format("UPDATE t SET {0} FROM {1} AS s JOIN {2} AS t ON {3}; SELECT @@RowCount;",
                         updateSetExpression, stagingTableName, destinationTableName, CommonUtil<T>.GetJoinConditionSql(options.UpdateOnCondition, storeGeneratedColumnNames, "s", "t"));
 
                     rowsUpdated = SqlUtil.ExecuteSql(updateSql, dbConnection, transaction, options.CommandTimeout);
-                    SqlUtil.DeleteTable(stagingTableName, dbConnection, transaction);
+                    context.Database.DropTable(stagingTableName);
 
                     //ClearEntityStateToUnchanged(context, entities);
                     dbTransactionContext.Commit();
@@ -383,13 +377,9 @@ namespace N.EntityFramework.Extensions
         public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions options) where T : class, new()
         {
             var dbContext = querable.GetDbContext();
-            var dbConnection = dbContext.GetSqlConnection();
-            //Open datbase connection
-            if (dbConnection.State == ConnectionState.Closed)
-                dbConnection.Open();
-
             var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
-            var command = new SqlCommand(sqlQuery.Sql, dbConnection);
+            var command = dbContext.Database.Connection.CreateCommand();
+            command.CommandText = sqlQuery.Sql;
             command.Parameters.AddRange(sqlQuery.Parameters);
 
             var reader = command.ExecuteReader();
@@ -460,7 +450,9 @@ namespace N.EntityFramework.Extensions
         {
             var results = new List<object[]>();
             var columns = new List<string>();
-            var command = new SqlCommand(sqlText, dbConnection, transaction);
+            var command = context.Database.Connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = sqlText;
             if (options.CommandTimeout.HasValue)
             {
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -597,26 +589,21 @@ namespace N.EntityFramework.Extensions
         }
         public static QueryToFileResult SqlQueryToCsvFile(this Database database, Stream stream, QueryToFileOptions options, string sqlText, params object[] parameters)
         {
-            var dbConnection = database.Connection as SqlConnection;
-            return InternalQueryToFile(dbConnection, stream, options, sqlText, parameters);
+            return InternalQueryToFile(database, stream, options, sqlText, parameters);
         }
         private static QueryToFileResult InternalQueryToFile<T>(this IQueryable<T> querable, Stream stream, QueryToFileOptions options)
         {
             var dbQuery = querable as DbQuery<T>;
-            var dbConnection = GetSqlConnectionFromIQuerable(querable);
-            return InternalQueryToFile(dbConnection, stream, options, dbQuery.Sql);
+            return InternalQueryToFile(dbQuery.GetDbContext().Database, stream, options, dbQuery.Sql);
         }
-        private static QueryToFileResult InternalQueryToFile(SqlConnection dbConnection, Stream stream, QueryToFileOptions options, string sqlText, object[] parameters=null)
+        private static QueryToFileResult InternalQueryToFile(Database database, Stream stream, QueryToFileOptions options, string sqlText, object[] parameters=null)
         {
             int dataRowCount = 0;
             int totalRowCount=0;
             long bytesWritten = 0;
 
-            //Open datbase connection
-            if (dbConnection.State == ConnectionState.Closed)
-                dbConnection.Open();
-
-            var command = new SqlCommand(sqlText, dbConnection);
+            var command = database.Connection.CreateCommand();
+            command.CommandText = sqlText;
             if (parameters != null)
             {
                 command.Parameters.AddRange(parameters);
