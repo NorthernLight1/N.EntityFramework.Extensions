@@ -34,21 +34,16 @@ namespace N.EntityFramework.Extensions
             TableName = (string)storeEntitySet.MetadataProperties["Table"].Value ?? storeEntitySet.Name;
         }
 
-        public string[] GetColumns(bool keepIdentity = false)
+        public IEnumerable<string> GetColumns(bool keepIdentity = false)
         {
             var columns = new List<string>();
-            columns.AddRange(this.Columns.Where(o => keepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => FormatColumnName(o.Column.Name)));
-            columns.AddRange(this.Conditions.Select(o => FormatColumnName(o.Column.Name)));
-            return columns.ToArray();
+            columns.AddRange(this.Columns.Where(o => keepIdentity || !o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name));
+            columns.AddRange(this.Conditions.Select(o => o.Column.Name));
+            return columns;
         }
         public IEnumerable<string> GetPrimaryKeyColumns()
         {
             return Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name);
-        }
-
-        private string FormatColumnName(string name)
-        {
-            return string.Format("[{0}]", name);
         }
     }
 }
