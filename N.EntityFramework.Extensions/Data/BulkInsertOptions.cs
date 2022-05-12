@@ -6,6 +6,7 @@ namespace N.EntityFramework.Extensions
 {
     public class BulkInsertOptions<T> : BulkOptions
     {
+        public Expression<Func<T, object>> IgnoreColumns { get; set; }
         public Expression<Func<T, object>> InputColumns { get; set; }
         public bool AutoMapOutputIdentity { get; set; }
         public bool KeepIdentity { get; set; }

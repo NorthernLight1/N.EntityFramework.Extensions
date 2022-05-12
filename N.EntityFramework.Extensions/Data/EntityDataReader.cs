@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity.Core.Mapping;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace N.EntityFramework.Extensions
@@ -20,7 +21,7 @@ namespace N.EntityFramework.Extensions
         private Dictionary<int, Func<T, object>> selectors;
         private Dictionary<int, ConditionPropertyMapping> conditions;
 
-        public EntityDataReader(TableMapping tableMapping, IEnumerable<T> entities, bool useInternalId)
+        public EntityDataReader(TableMapping tableMapping, IEnumerable<T> entities, IEnumerable<string> inputColumns, bool useInternalId)
         {
             this.columnIndexes = new Dictionary<string, int>();
             this.currentId = 0;
@@ -31,19 +32,22 @@ namespace N.EntityFramework.Extensions
             this.selectors = new Dictionary<int, Func<T, object>>();
             this.conditions = new Dictionary<int, ConditionPropertyMapping>();
             this.EntityMap = new Dictionary<long, T>();
-            this.FieldCount = tableMapping.Columns.Count + tableMapping.Conditions.Count;
+            this.FieldCount = 0;
             this.TableMapping = tableMapping;
             
 
             int i = 0;
             foreach (var column in tableMapping.Columns)
             {
-                var type = Expression.Parameter(typeof(T), "type");
-                var propertyExpression = Expression.PropertyOrField(type, column.Property.Name);
-                var expression = Expression.Lambda<Func<T, object>>(Expression.Convert(propertyExpression, typeof(object)), type);
-                selectors[i] = expression.Compile();
-                columnIndexes[column.Property.Name] = i;
-                i++;
+                if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Property.Name)))
+                {
+                    var type = Expression.Parameter(typeof(T), "type");
+                    var propertyExpression = Expression.PropertyOrField(type, column.Property.Name);
+                    var expression = Expression.Lambda<Func<T, object>>(Expression.Convert(propertyExpression, typeof(object)), type);
+                    selectors[i] = expression.Compile();
+                    columnIndexes[column.Property.Name] = i;
+                    i++;
+                }
             }
             foreach(var condition in TableMapping.Conditions)
             {
@@ -51,12 +55,13 @@ namespace N.EntityFramework.Extensions
                 columnIndexes[condition.Column.Name] = i;
                 i++;
             }
-            
             if(useInternalId)
             {
-                this.FieldCount++;
                 columnIndexes[Constants.InternalId_ColumnName] = i;
+                i++;
             }
+
+            this.FieldCount = i;
         }
 
         public object this[int i] => throw new NotImplementedException();
