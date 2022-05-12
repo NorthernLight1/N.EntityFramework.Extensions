@@ -31,7 +31,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
         [TestMethod]
         public void With_Default_Options_Tph()
         {
-            var dbContext = SetupDbContext(true);
+            var dbContext = SetupDbContext(true, PopulateDataMode.Tph);
             var customers = dbContext.TphPeople.Where(o => o.LastName != "BulkUpdateTest").OfType<TphCustomer>().ToList();
             var vendors = dbContext.TphPeople.OfType<TphVendor>().ToList();
             foreach (var customer in customers)
@@ -49,18 +49,36 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newCustomers == rowsUpdated, "The count of new customers must be equal the number of rows updated in the database.");
         }
         [TestMethod]
-        public void With_Options_IgnoreColumns()
+        public void With_Options_IgnoreColumns1()
         {
             var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).OrderBy(o => o.Id).ToList();
-            //int ordersWithExternalId = orders.Where(o => o.ExternalId != null).Count();
             foreach (var order in orders)
             {
                 order.Price = 2.35M;
                 order.ExternalId = null;
             }
             var oldTotal = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
-            int rowsUpdated = dbContext.BulkUpdate(orders, options => { options.IgnoreColumnsOnUpdate = o => new { o.ExternalId }; });
+            int rowsUpdated = dbContext.BulkUpdate(orders, options => { options.IgnoreColumns = o => o.ExternalId; });
+            var newTotal1 = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
+            var newTotal2 = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).Count();
+
+            Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
+            Assert.IsTrue(newTotal1 == rowsUpdated + oldTotal, "The count of new orders must be equal the number of rows updated in the database.");
+            Assert.IsTrue(newTotal2 == 0, "There should be not records with condition (Price = $1.25)");
+        }
+        [TestMethod]
+        public void With_Options_IgnoreColumns2()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).OrderBy(o => o.Id).ToList();
+            foreach (var order in orders)
+            {
+                order.Price = 2.35M;
+                order.ExternalId = null;
+            }
+            var oldTotal = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
+            int rowsUpdated = dbContext.BulkUpdate(orders, options => { options.IgnoreColumns = o => new { o.ExternalId }; });
             var newTotal1 = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
             var newTotal2 = dbContext.Orders.Where(o => o.Price == 1.25M && o.ExternalId != null).Count();
 

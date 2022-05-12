@@ -20,9 +20,21 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newTotal == 0, "Must be 0 to indicate all records were deleted");
         }
         [TestMethod]
+        public void With_Default_Options_Tpc()
+        {
+            var dbContext = SetupDbContext(true, PopulateDataMode.Tpc);
+            var customers = dbContext.TpcPeople.OfType<TpcCustomer>().ToList();
+            int rowsDeleted = dbContext.BulkDelete(customers, options => { options.DeleteOnCondition = (s, t) => s.Id == t.Id; });
+            var newCustomers = dbContext.TpcPeople.OfType<TpcCustomer>().Count();
+
+            Assert.IsTrue(customers.Count > 0, "There must be tpcCustomer records in database");
+            Assert.IsTrue(rowsDeleted == customers.Count, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newCustomers == 0, "Must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
         public void With_Default_Options_Tph()
         {
-            var dbContext = SetupDbContext(true);
+            var dbContext = SetupDbContext(true, PopulateDataMode.Tph);
             var customers = dbContext.TphPeople.OfType<TphCustomer>().ToList();
             int rowsDeleted = dbContext.BulkDelete(customers);
             var newCustomers = dbContext.TphPeople.OfType<TphCustomer>().Count();
