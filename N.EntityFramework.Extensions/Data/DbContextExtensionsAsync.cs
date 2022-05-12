@@ -67,11 +67,11 @@ namespace N.EntityFramework.Extensions
                 return rowsAffected;
             }
         }
-        public async static Task FetchAsync<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, Action<FetchOptions> optionsAction, CancellationToken cancellationToken = default) where T : class, new()
+        public async static Task FetchAsync<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, Action<FetchOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class, new()
         {
             await FetchAsync(querable, action, optionsAction.Build(), cancellationToken);
         }
-        public async static Task FetchAsync<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions options, CancellationToken cancellationToken = default) where T : class, new()
+        public async static Task FetchAsync<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions<T> options, CancellationToken cancellationToken = default) where T : class, new()
         {
             var dbContext = querable.GetDbContext();
             var dbConnection = dbContext.GetSqlConnection();
@@ -80,6 +80,8 @@ namespace N.EntityFramework.Extensions
                 dbConnection.Open();
 
             var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
+            if(options.InputColumns != null)
+                sqlQuery.SelectColumns(options.InputColumns.GetObjectProperties());
             var command = new SqlCommand(sqlQuery.Sql, dbConnection);
             command.Parameters.AddRange(sqlQuery.Parameters);
             var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -144,13 +146,15 @@ namespace N.EntityFramework.Extensions
                     var transaction = dbTransactionContext.CurrentTransaction;
                     string stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    IEnumerable<string> columnNames = tableMapping.GetColumns(options.KeepIdentity);
+
+                    IEnumerable<string> columnNames = options.InputColumns != null ? options.InputColumns.GetObjectProperties() : tableMapping.GetColumns(options.KeepIdentity);
+                    columnNames = columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o));
                     string[] storeGeneratedColumnNames = tableMapping.GetPrimaryKeyColumns().ToArray();
+                    IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames);
+                    columnNames = columnNames.Union(storeGeneratedColumnNames);
 
                     context.Database.CloneTable(destinationTableName, stagingTableName, null, Common.Constants.InternalId_ColumnName);
-                    var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true, true, cancellationToken);
-
-                    IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames);
+                    var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, columnNames, SqlBulkCopyOptions.KeepIdentity, true, true, cancellationToken);
 
                     List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
@@ -205,9 +209,9 @@ namespace N.EntityFramework.Extensions
             }
         }
         private async static Task<BulkInsertResult<T>> BulkInsertAsync<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName,
-            string[] inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId = false, bool includeConditionColumns = true, CancellationToken cancellationToken = default)
+            IEnumerable<string> inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId = false, bool includeConditionColumns = true, CancellationToken cancellationToken = default)
         {
-            var dataReader = new EntityDataReader<T>(tableMapping, entities, useInteralId);
+            var dataReader = new EntityDataReader<T>(tableMapping, entities, inputColumns, useInteralId);
 
             var sqlBulkCopy = new SqlBulkCopy(dbConnection, bulkCopyOptions, transaction)
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -99,10 +100,20 @@ namespace N.EntityFramework.Extensions
 
             throw new NotImplementedException("Unhandled data type.");
         }
-
         public static List<string> GetObjectProperties<T>(this Expression<Func<T, object>> expression)
         {
-            return expression == null ? new List<string>() : expression.Body.Type.GetProperties().Select(o => o.Name).ToList();
+            if(expression == null)
+            {
+                return new List<string>();
+            }
+            else if (expression.Body.Type == typeof(string))
+            {
+                return new List<string>() { ((PropertyInfo)expression.Body.GetPrivateFieldValue("Member")).Name };
+            } 
+            else
+            {
+                return expression.Body.Type.GetProperties().Select(o => o.Name).ToList();
+            }
         }
         internal static string ToSqlPredicate<T>(this Expression<T> expression, params string[] parameters)
         {

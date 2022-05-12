@@ -1,4 +1,5 @@
-﻿using System;
+﻿using N.EntityFramework.Extensions.Util;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity.Core.Objects;
 using System.Data.SqlClient;
@@ -134,7 +135,15 @@ namespace N.EntityFramework.Extensions.Sql
             string insertValueExpression = string.Format("INTO {0} ({1})", tableName, columnsToInsert);
             Clauses.Insert(0, new SqlClause { Name = "INSERT", InputText = insertValueExpression });
             sqlSelectClause.InputText = columnsToInsert;
-            
+        }
+        internal void SelectColumns(IEnumerable<string> columns)
+        {
+            var tableAlias = GetTableAlias();
+            var sqlClause = Clauses.FirstOrDefault();
+            if(sqlClause.Name == "SELECT")
+            {
+                sqlClause.InputText = string.Join(",", columns.Select(c => string.Format("{0}.{1}", tableAlias, c)));
+            }
         }
         private void Validate()
         {

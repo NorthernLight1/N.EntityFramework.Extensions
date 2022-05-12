@@ -93,13 +93,16 @@ namespace N.EntityFramework.Extensions
                     var transaction = dbTransactionContext.CurrentTransaction;
                     string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    IEnumerable<string> columnNames = tableMapping.GetColumns(options.KeepIdentity);
+
+                    IEnumerable<string> columnNames = options.InputColumns != null ? options.InputColumns.GetObjectProperties() : tableMapping.GetColumns(options.KeepIdentity);
+                    columnNames = columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o));
                     string[] storeGeneratedColumnNames = tableMapping.Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name).ToArray();
+                    IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames);
+                    columnNames = columnNames.Union(storeGeneratedColumnNames);
 
                     context.Database.CloneTable(destinationTableName, stagingTableName, null, Common.Constants.InternalId_ColumnName);
-                    var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true);
+                    var bulkInsertResult = BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, columnNames, SqlBulkCopyOptions.KeepIdentity, true);
 
-                    IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames);
 
                     List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
@@ -157,9 +160,9 @@ namespace N.EntityFramework.Extensions
         }
 
         private static BulkInsertResult<T> BulkInsert<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName,
-            string[] inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId=false, bool includeConditionColumns=true)
+            IEnumerable<string> inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId=false, bool includeConditionColumns=true)
         {
-            var dataReader = new EntityDataReader<T>(tableMapping, entities, useInteralId);
+            var dataReader = new EntityDataReader<T>(tableMapping, entities, inputColumns, useInteralId);
 
             var sqlBulkCopy = new SqlBulkCopy(dbConnection, bulkCopyOptions, transaction)
             {
@@ -370,14 +373,16 @@ namespace N.EntityFramework.Extensions
                 return rowsUpdated;
             }
         }
-        public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, Action<FetchOptions> optionsAction) where T : class, new()
+        public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, Action<FetchOptions<T>> optionsAction) where T : class, new()
         {
             Fetch(querable, action, optionsAction.Build());
         }
-        public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions options) where T : class, new()
+        public static void Fetch<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions<T> options) where T : class, new()
         {
             var dbContext = querable.GetDbContext();
             var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
+            if (options.InputColumns != null)
+                sqlQuery.SelectColumns(options.InputColumns.GetObjectProperties());
             var command = dbContext.Database.Connection.CreateCommand();
             command.CommandText = sqlQuery.Sql;
             command.Parameters.AddRange(sqlQuery.Parameters);
