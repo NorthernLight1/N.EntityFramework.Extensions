@@ -381,8 +381,13 @@ namespace N.EntityFramework.Extensions
         {
             var dbContext = querable.GetDbContext();
             var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
-            if (options.InputColumns != null)
-                sqlQuery.SelectColumns(options.InputColumns.GetObjectProperties());
+            if (options.InputColumns != null || options.IgnoreColumns != null)
+            {
+                var tableMapping = dbContext.GetTableMapping(typeof(T));
+                IEnumerable<string> columnNames = options.InputColumns != null ? options.InputColumns.GetObjectProperties() :  tableMapping.GetColumns(true);
+                IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns(columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o)));
+                sqlQuery.SelectColumns(columnsToFetch);
+            }
             var command = dbContext.Database.Connection.CreateCommand();
             command.CommandText = sqlQuery.Sql;
             command.Parameters.AddRange(sqlQuery.Parameters);

@@ -28,6 +28,43 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
         [TestMethod]
+        public async Task With_Default_Options_Tpc()
+        {
+            var dbContext = SetupDbContext(false);
+            var customers = new List<TpcCustomer>();
+            var vendors = new List<TpcVendor>();
+            for (int i = 0; i < 20000; i++)
+            {
+                customers.Add(new TpcCustomer
+                {
+                    Id = i,
+                    FirstName = string.Format("John_{0}", i),
+                    LastName = string.Format("Smith_{0}", i),
+                    Email = string.Format("john.smith{0}@domain.com", i),
+                    AddedDate = DateTime.UtcNow
+                });
+            }
+            for (int i = 20000; i < 30000; i++)
+            {
+                vendors.Add(new TpcVendor
+                {
+                    Id = i,
+                    FirstName = string.Format("Mike_{0}", i),
+                    LastName = string.Format("Smith_{0}", i),
+                    Email = string.Format("mike.smith{0}@domain.com", i),
+                    Url = string.Format("http://domain.com/mike.smith{0}", i)
+                });
+            }
+            int oldTotal = dbContext.TpcPeople.Count();
+            int customerRowsInserted = await dbContext.BulkInsertAsync(customers);
+            int vendorRowsInserted = await dbContext.BulkInsertAsync(vendors);
+            int rowsInserted = customerRowsInserted + vendorRowsInserted;
+            int newTotal = dbContext.TpcPeople.Count();
+
+            Assert.IsTrue(rowsInserted == customers.Count + vendors.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
+        }
+        [TestMethod]
         public async Task With_Default_Options_Tph()
         {
             var dbContext = SetupDbContext(false);
@@ -114,6 +151,38 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 
             Assert.IsTrue(rowsAdded == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
+        }
+        [TestMethod]
+        public async Task With_Options_IgnoreColumns()
+        {
+            var dbContext = SetupDbContext(false);
+            var orders = new List<Order>();
+            for (int i = 0; i < 20000; i++)
+            {
+                orders.Add(new Order { Id = i, ExternalId = i.ToString(), Price = 1.57M, Active = true });
+            }
+            int oldTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
+            int rowsInserted = await dbContext.BulkInsertAsync(orders, options => { options.UsePermanentTable = true; options.IgnoreColumns = o => new { o.ExternalId }; });
+            int newTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
+
+            Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
+        }
+        [TestMethod]
+        public async Task With_Options_InputColumns()
+        {
+            var dbContext = SetupDbContext(false);
+            var orders = new List<Order>();
+            for (int i = 0; i < 20000; i++)
+            {
+                orders.Add(new Order { Id = i, ExternalId = i.ToString(), Price = 1.57M, Active = true });
+            }
+            int oldTotal = dbContext.Orders.Where(o => o.Price == 1.57M && o.ExternalId == null && o.Active == true).Count();
+            int rowsInserted = await dbContext.BulkInsertAsync(orders, options => { options.UsePermanentTable = true; options.InputColumns = o => new { o.Price, o.Active, o.AddedDateTime }; });
+            int newTotal = dbContext.Orders.Where(o => o.Price == 1.57M && o.ExternalId == null && o.Active == true).Count();
+
+            Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
         [TestMethod]
         public async Task With_Options_KeepIdentity()
