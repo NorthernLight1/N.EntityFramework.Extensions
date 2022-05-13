@@ -190,7 +190,9 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | UpdateFromQueryAsync(updateExpression, cancellationToken) | Updates all rows from the database using a LINQ query without loading in context using asynchronous task  |
 | **Fetch** |
 | Fetch(fetchAction) | Fetch rows in batches from the database using a LINQ query |
+| Fetch(fetchAction, options) | Fetch rows in batches from the database using a LINQ query |
 | FetchAsync(fetchAction)  | Fetch rows asynchronously in batches from the database using a LINQ query |
+| FetchAsync(fetchAction, options)  | Fetch rows asynchronously in batches from the database using a LINQ query |
 | FetchAsync(fetchAction, cancellationToken) | Fetch rows asynchronously in batches from the database using a LINQ query  | 
-
+| FetchAsync(fetchAction, options, cancellationToken) | Fetch rows asynchronously in batches from the database using a LINQ query  | 
   
