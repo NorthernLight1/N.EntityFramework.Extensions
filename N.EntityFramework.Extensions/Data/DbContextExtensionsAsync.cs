@@ -80,8 +80,13 @@ namespace N.EntityFramework.Extensions
                 dbConnection.Open();
 
             var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
-            if(options.InputColumns != null)
-                sqlQuery.SelectColumns(options.InputColumns.GetObjectProperties());
+            if (options.InputColumns != null || options.IgnoreColumns != null)
+            {
+                var tableMapping = dbContext.GetTableMapping(typeof(T));
+                IEnumerable<string> columnNames = options.InputColumns != null ? options.InputColumns.GetObjectProperties() : tableMapping.GetColumns(true);
+                IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns(columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o)));
+                sqlQuery.SelectColumns(columnsToFetch);
+            }
             var command = new SqlCommand(sqlQuery.Sql, dbConnection);
             command.Parameters.AddRange(sqlQuery.Parameters);
             var reader = await command.ExecuteReaderAsync(cancellationToken);

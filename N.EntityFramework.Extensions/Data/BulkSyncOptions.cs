@@ -11,17 +11,5 @@ namespace N.EntityFramework.Extensions
         {
             this.DeleteIfNotMatched = true;
         }
-        //public BulkSyncOptions(BulkMergeOptions<T> options)
-        //{
-        //    AutoMapOutputIdentity = options.AutoMapOutputIdentity;
-        //    BatchSize = options.BatchSize;
-        //    CommandTimeout = options.CommandTimeout;
-        //    IgnoreColumnsOnInsert = options.IgnoreColumnsOnInsert;
-        //    IgnoreColumnsOnUpdate = options.IgnoreColumnsOnUpdate;
-        //    MergeOnCondition = options.MergeOnCondition;
-        //    TableName = options.TableName;
-        //    UsePermanentTable = options.UsePermanentTable;
-        //    DeleteIfNotMatched = false;
-        //}
     }
 }
