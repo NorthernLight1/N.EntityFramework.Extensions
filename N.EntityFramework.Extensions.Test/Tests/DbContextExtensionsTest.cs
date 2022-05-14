@@ -36,18 +36,6 @@ namespace N.EntityFramework.Extensions.Test.Tests
         //    Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         //}
         [TestMethod]
-        public void DeleteFromQuery_IQuerable()
-        {
-            var dbContext = SetupDbContext(true);
-            int oldTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
-            int rowsDeleted = dbContext.Orders.Where(o => o.Price <= 10).DeleteFromQuery();
-            int newTotal = dbContext.Orders.Where(o => o.Price <= 10).Count();
-
-            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
-            Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
-            Assert.IsTrue(newTotal == 0, "Delete() Failed: must be 0 to indicate all records were delted");
-        }
-        [TestMethod]
         public void DeleteFromQuery_IEnumerable()
         {
             var dbContext = SetupDbContext(true);
@@ -58,55 +46,6 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
             Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
-        }
-        [TestMethod]
-        public void DeleteFromQuery_With_DateTime()
-        {
-            var dbContext = SetupDbContext(true);
-            int oldTotal = dbContext.Orders.Count();
-            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
-            int rowsToDelete = dbContext.Orders.Where(o => o.ModifiedDateTime != null && o.ModifiedDateTime >= dateTime).Count();
-            int rowsDeleted = dbContext.Orders.Where(o => o.ModifiedDateTime != null && o.ModifiedDateTime >= dateTime)
-                .DeleteFromQuery();
-            int newTotal = dbContext.Orders.Count();
-
-            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
-            Assert.IsTrue(rowsDeleted == rowsToDelete, "The number of rows deleted must match the count of the rows that matched in the database");
-            Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
-        }
-        [TestMethod]
-        public void DeleteFromQuery_With_DifferentValues()
-        {
-            var dbContext = SetupDbContext(true);
-            int oldTotal = dbContext.Orders.Count();
-            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
-            var orders = dbContext.Orders.Where(o => o.Id == 1 && o.Active && o.ModifiedDateTime >= dateTime);
-            int rowsToDelete = orders.Count();
-            int rowsDeleted = orders.DeleteFromQuery();
-            int newTotal = dbContext.Orders.Count();
-
-            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
-            Assert.IsTrue(rowsDeleted == rowsToDelete, "The number of rows deleted must match the count of the rows that matched in the database");
-            Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
-        }
-        [TestMethod]
-        public void DeleteFromQuery_With_Transaction()
-        {
-            var dbContext = SetupDbContext(true);
-            int rowsDeleted;
-            int oldTotal = dbContext.Orders.Count();
-            var orders = dbContext.Orders.Where(o => o.Price <= 10);
-            int rowsToDelete = orders.Count();
-            using (var transaction = dbContext.Database.BeginTransaction())
-            {
-                rowsDeleted = orders.DeleteFromQuery();
-                transaction.Rollback();
-            }
-            int newTotal = dbContext.Orders.Count();
-
-            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < $10)");
-            Assert.IsTrue(rowsDeleted == orders.Count(), "The number of rows update must match the count of rows that match the condtion (Price < $10)");
-            Assert.IsTrue(newTotal == oldTotal, "The new count must match the old count since the transaction was rollbacked");
         }
         [TestMethod]
         public void QueryToCsvFile()
@@ -191,17 +130,6 @@ namespace N.EntityFramework.Extensions.Test.Tests
             Assert.IsTrue(efCount > 0, "Count from EF should be greater than zero");
             Assert.IsTrue(efCount > 0, "Count from SQL should be greater than zero");
             Assert.IsTrue(efCount == sqlCount, "Count from EF should match the count from the SqlQuery");
-        }
-        [TestMethod]
-        public void Sql_TableExists()
-        {
-            var dbContext = SetupDbContext(true);
-            int efCount = dbContext.Orders.Where(o => o.Price > 5M).Count();
-            bool ordersTableExists = dbContext.Database.TableExists("Orders");
-            bool orderNewTableExists = dbContext.Database.TableExists("OrdersNew");
-
-            Assert.IsTrue(ordersTableExists, "Orders table should exist");
-            Assert.IsTrue(!orderNewTableExists, "Orders_New table should not exist");
         }
         private TestDbContext SetupDbContext(bool populateData)
         {
