@@ -31,7 +31,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 
             Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
             Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
-            Assert.IsTrue(newTotal == 0, "Delete() Failed: must be 0 to indicate all records were delted");
+            Assert.IsTrue(newTotal == 0, "Delete() Failed: must be 0 to indicate all records were deleted");
         }
         [TestMethod]
         public void With_Decimal_Using_IEnumerable()
