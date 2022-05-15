@@ -22,9 +22,9 @@ namespace N.EntityFramework.Extensions
             var dbConnection = database.Connection as SqlConnection;
             return SqlUtil.ClearTable(tableName, dbConnection, null);
         }
-        internal static int CloneTable(this Database database, string sourceTable, string destinationTable, string[] columnNames = null, string internalIdColumnName = null)
+        internal static int CloneTable(this Database database, string sourceTable, string destinationTable, IEnumerable<string> columnNames = null, string internalIdColumnName = null)
         {
-            string columns = columnNames != null && columnNames.Length > 0 ? string.Join(",", columnNames) : "*";
+            string columns = columnNames != null && columnNames.Count() > 0 ? string.Join(",", columnNames) : "*";
             columns = !string.IsNullOrEmpty(internalIdColumnName) ? string.Format("{0},CAST( NULL AS INT) AS {1}", columns, internalIdColumnName) : columns;
             return database.ExecuteSqlCommand(string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
         }

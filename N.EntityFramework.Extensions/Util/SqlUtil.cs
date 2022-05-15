@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 
 namespace N.EntityFramework.Extensions
 {
@@ -33,6 +34,17 @@ namespace N.EntityFramework.Extensions
             if(parameters != null)
                 sqlCommand.Parameters.AddRange(parameters);
             return sqlCommand.ExecuteScalar();
+        }
+        internal static async Task<object> ExecuteScalarAsync(string query, SqlConnection connection, SqlTransaction transaction, object[] parameters = null, int? commandTimeout = null)
+        {
+            var sqlCommand = new SqlCommand(query, connection, transaction);
+            if (connection.State == ConnectionState.Closed)
+                connection.Open();
+            if (commandTimeout.HasValue)
+                sqlCommand.CommandTimeout = commandTimeout.Value;
+            if (parameters != null)
+                sqlCommand.Parameters.AddRange(parameters);
+            return await sqlCommand.ExecuteScalarAsync();
         }
         internal static int ClearTable(string tableName, SqlConnection connection, SqlTransaction transaction)
         {
