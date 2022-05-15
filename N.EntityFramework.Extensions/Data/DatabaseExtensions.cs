@@ -1,4 +1,5 @@
-﻿using System;
+﻿using N.EntityFramework.Extensions.Util;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.Entity;
@@ -24,7 +25,7 @@ namespace N.EntityFramework.Extensions
         }
         internal static int CloneTable(this Database database, string sourceTable, string destinationTable, IEnumerable<string> columnNames = null, string internalIdColumnName = null)
         {
-            string columns = columnNames != null && columnNames.Count() > 0 ? string.Join(",", columnNames) : "*";
+            string columns = columnNames != null && columnNames.Count() > 0 ? string.Join(",", CommonUtil.FormatColumns(columnNames)) : "*";
             columns = !string.IsNullOrEmpty(internalIdColumnName) ? string.Format("{0},CAST( NULL AS INT) AS {1}", columns, internalIdColumnName) : columns;
             return database.ExecuteSqlCommand(string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
         }
