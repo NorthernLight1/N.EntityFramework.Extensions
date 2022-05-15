@@ -62,6 +62,18 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
         }
         [TestMethod]
+        public void With_Delete_All()
+        {
+            var dbContext = SetupDbContext(true);
+            int oldTotal = dbContext.Orders.Count();
+            int rowsDeleted = dbContext.Orders.DeleteFromQuery();
+            int newTotal = dbContext.Orders.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
+            Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
         public void With_Different_Values()
         {
             var dbContext = SetupDbContext(true);
