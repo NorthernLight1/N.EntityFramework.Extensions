@@ -19,9 +19,9 @@ namespace N.EntityFramework.Extensions.Util
                 tableName = string.Format("[{0}].[#tmp_be_xx_{1}]", tableMapping.Schema, tableMapping.TableName);
             return tableName;
         }
-        internal static IEnumerable<string> FormatColumns(IEnumerable<string> enumerable)
+        internal static IEnumerable<string> FormatColumns(IEnumerable<string> columns)
         {
-            return enumerable.Select(s => string.Format("[{0}]", s));
+            return columns.Select(s => s.StartsWith("[") && s.EndsWith("]") ? s : string.Format("[{0}]", s));
         }
     }
     internal static class CommonUtil<T>
