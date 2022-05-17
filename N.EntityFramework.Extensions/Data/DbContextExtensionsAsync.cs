@@ -158,7 +158,7 @@ namespace N.EntityFramework.Extensions
                     IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames);
                     columnNames = columnNames.Union(storeGeneratedColumnNames);
 
-                    context.Database.CloneTable(destinationTableName, stagingTableName, null, Common.Constants.InternalId_ColumnName);
+                    context.Database.CloneTable(destinationTableName, stagingTableName, columnNames, Common.Constants.InternalId_ColumnName);
                     var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, columnNames, SqlBulkCopyOptions.KeepIdentity, true, true, cancellationToken);
 
                     List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
