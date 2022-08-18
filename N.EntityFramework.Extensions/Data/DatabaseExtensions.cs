@@ -1,6 +1,7 @@
 ﻿using N.EntityFramework.Extensions.Util;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Data.Entity;
 using System.Data.Entity.Core.EntityClient;
@@ -45,9 +46,26 @@ namespace N.EntityFramework.Extensions
         }
         public static bool TableExists(this Database database, string tableName)
         {
-            var dbTransaction = database.CurrentTransaction != null ? database.CurrentTransaction.UnderlyingTransaction as SqlTransaction : null;
+            return Convert.ToBoolean(database.ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName)));
+        }
+        internal static object ExecuteScalar(this Database database, string query, object[] parameters = null, int? commandTimeout = null)
+        {
+            object value;
             var dbConnection = database.Connection as SqlConnection;
-            return SqlUtil.TableExists(tableName, dbConnection, dbTransaction);
+            using (var sqlCommand = dbConnection.CreateCommand())
+            {
+                sqlCommand.CommandText = query;
+                if (database.CurrentTransaction != null)
+                    sqlCommand.Transaction = database.CurrentTransaction.UnderlyingTransaction as SqlTransaction;
+                if (dbConnection.State == ConnectionState.Closed)
+                    dbConnection.Open();
+                if (commandTimeout.HasValue)
+                    sqlCommand.CommandTimeout = commandTimeout.Value;
+                if (parameters != null)
+                    sqlCommand.Parameters.AddRange(parameters);
+                value = sqlCommand.ExecuteScalar();
+            }
+            return value;
         }
     }
 }

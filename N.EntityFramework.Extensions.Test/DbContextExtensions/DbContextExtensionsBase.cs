@@ -82,11 +82,11 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
                     }
                     for (int i = 2050; i < 7000; i++)
                     {
-                        products.Add(new Product { Id = i.ToString(), Price = 1.25M, OutOfStock = true });
+                        products.Add(new Product { Id = i.ToString(), Price = 5.75M, OutOfStock = true });
                         id++;
                     }
 
-                    Debug.WriteLine("Last Id for Article is {0}", id);
+                    Debug.WriteLine("Last Id for Product is {0}", id);
                     dbContext.BulkInsert(products, new BulkInsertOptions<Product>() { KeepIdentity = false, AutoMapOutputIdentity = false });
                 }
                 else if (mode == PopulateDataMode.Tph)
