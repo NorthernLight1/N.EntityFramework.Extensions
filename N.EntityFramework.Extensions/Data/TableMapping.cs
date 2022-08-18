@@ -20,6 +20,8 @@ namespace N.EntityFramework.Extensions
             get { return string.Format("[{0}].[{1}]", this.Schema, this.TableName);  }
         }
 
+        public bool HasIdentity => this.Columns.Any(o => o.Column.IsStoreGeneratedIdentity);
+
         public TableMapping(EntitySet entitySet, EntityType entityType, EntitySetMapping mapping, 
             List<ScalarPropertyMapping> columns, List<ConditionPropertyMapping> conditions)
         {
@@ -43,7 +45,8 @@ namespace N.EntityFramework.Extensions
         }
         public IEnumerable<string> GetPrimaryKeyColumns()
         {
-            return Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name);
+            return EntitySet.ElementType.KeyMembers.Select(o => o.Name);
+            //return Columns.Where(o => o.Column.IsStoreGeneratedIdentity).Select(o => o.Column.Name);
         }
     }
 }

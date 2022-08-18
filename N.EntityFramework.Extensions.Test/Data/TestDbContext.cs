@@ -1,4 +1,5 @@
 ﻿using N.EntityFramework.Extensions.Test.Data;
+using System;
 using System.Data.Entity;
 
 
@@ -11,13 +12,16 @@ namespace N.EntityFramework.Extensions.Test.Data
         public virtual DbSet<Product> Products { get; set; }
         public virtual DbSet<TpcPerson> TpcPeople { get; set; }
         public virtual DbSet<TphPerson> TphPeople { get; set; }
-        
+        public virtual DbSet<TphCustomer> TphCustomers { get; set; }
+        public virtual DbSet<TphVendor> TphVendors { get; set; }
+
         public TestDbContext() : base(_connectionString)
         {
             Database.SetInitializer(new MigrateDatabaseToLatestVersion<TestDbContext, TestDbConfiguration>());
         }
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
+        	//modelBuilder.Entity<TphPerson>().Property<DateTime>("CreatedDate");
             modelBuilder.Entity<TpcCustomer>().Map(m =>
             {
                 m.MapInheritedProperties();
