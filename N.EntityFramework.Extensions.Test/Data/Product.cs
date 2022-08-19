@@ -13,6 +13,9 @@ namespace N.EntityFramework.Extensions.Test.Data
         public string Id { get; set; }
         public decimal Price { get; set; }
         public bool OutOfStock { get; set; }
+        [Column("Status")]
+        [StringLength(25)]
+        public string StatusString { get; set; }
         public DateTime? UpdatedDateTime { get; set; }
         public Product()
         {

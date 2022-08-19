@@ -39,7 +39,7 @@ namespace N.EntityFramework.Extensions
             int i = 0;
             foreach (var column in tableMapping.Columns)
             {
-                if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Property.Name)))
+                if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
                 {
                     var type = Expression.Parameter(typeof(T), "type");
                     var propertyExpression = Expression.PropertyOrField(type, column.Property.Name);
