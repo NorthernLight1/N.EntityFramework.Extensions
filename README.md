@@ -3,7 +3,7 @@
 
 [![latest version](https://img.shields.io/nuget/v/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions)
 
-**If you are using Entity Framework Core v5.0.1+, you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
+**If you are using Entity Framework Core v6.0.8+, you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
 
 ## Bulk data support for the EntityFramework 6.2.0+
 
