@@ -1,13 +1,12 @@
 # N.EntityFramework.Extensions
---------------------
 
-[![latest version](https://img.shields.io/nuget/v/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions)
+[![latest version](https://img.shields.io/nuget/v/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions) [![downloads](https://img.shields.io/nuget/dt/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions)
 
 **If you are using Entity Framework Core v6.0.8+, you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
 
-## Bulk data support for the EntityFramework 6.2.0+
+## Bulk data support for the EntityFramework 6.4.4+
 
-The framework currently supports the following operations:
+The framework currently supports the following operations:G
 
 Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
 
