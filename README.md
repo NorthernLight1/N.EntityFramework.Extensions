@@ -6,7 +6,7 @@
 
 ## Bulk data support for the EntityFramework 6.4.4+
 
-The framework currently supports the following operations:G
+The framework currently supports the following operations:
 
 Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
 
