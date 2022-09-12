@@ -75,6 +75,11 @@ namespace N.EntityFramework.Extensions
             return Convert.ToBoolean(ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName), 
                 dbConnection, dbTransaction, null));
         }
+
+        internal static object GetDBValue(object value)
+        {
+            return value == DBNull.Value ? null : value;
+        }
     }
 }
 

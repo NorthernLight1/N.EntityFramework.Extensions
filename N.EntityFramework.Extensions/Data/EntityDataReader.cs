@@ -12,14 +12,14 @@ namespace N.EntityFramework.Extensions
     {
         public TableMapping TableMapping { get; set; }
         public Dictionary<long,T> EntityMap { get; set; }
-        private Dictionary<string, int> columnIndexes;
+        private readonly Dictionary<string, int> columnIndexes;
         private long currentId;
-        private bool useInternalId;
-        private int tableFieldCount;
-        private IEnumerable<T> entities;
-        private IEnumerator<T> enumerator;
+        private readonly bool useInternalId;
+        private readonly int tableFieldCount;
+        private readonly IEnumerable<T> entities;
+        private readonly IEnumerator<T> enumerator;
         private Dictionary<int, Func<T, object>> selectors;
-        private Dictionary<int, ConditionPropertyMapping> conditions;
+        private readonly Dictionary<int, ConditionPropertyMapping> conditions;
 
         public EntityDataReader(TableMapping tableMapping, IEnumerable<T> entities, IEnumerable<string> inputColumns, bool useInternalId)
         {
@@ -195,7 +195,7 @@ namespace N.EntityFramework.Extensions
             }
             else
             {
-                return i < tableFieldCount ? selectors[i](enumerator.Current) : conditions[i].GetPrivateFieldValue("Value");
+                return i < selectors.Count ? selectors[i](enumerator.Current) : conditions[i].GetPrivateFieldValue("Value");
             }
             
         }
