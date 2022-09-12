@@ -21,7 +21,6 @@ namespace N.EntityFramework.Extensions
             this.SqlText = sqlText;
             this.Parameters = parameters;
         }
-
         public int Count()
         {
             string countSqlText = SqlBuilder.Parse(this.SqlText).Count();
@@ -31,10 +30,6 @@ namespace N.EntityFramework.Extensions
         {
             string countSqlText = SqlBuilder.Parse(this.SqlText).Count();
             return (int)(await SqlUtil.ExecuteScalarAsync(countSqlText, this.Connection, null, this.Parameters));
-        }
-        public int ExecuteNonQuery()
-        {
-            return SqlUtil.ExecuteSql(this.SqlText, this.Connection, null, this.Parameters);
         }
     }
 }

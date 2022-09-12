@@ -10,9 +10,9 @@ namespace N.EntityFramework.Extensions.Test.DatabaseExtensions
 {
     public class DatabaseExtensionsBase
     {
-        protected TestDbContext SetupDbContext(bool populateData)
+        protected static TestDbContext SetupDbContext(bool populateData)
         {
-            TestDbContext dbContext = new TestDbContext();
+            var dbContext = new TestDbContext();
             dbContext.Database.CreateIfNotExists();
             dbContext.Orders.Truncate();
             if (populateData)

@@ -18,14 +18,15 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
         [TestInitialize]
         public void Init()
         {
-            TestDbContext dbContext = new TestDbContext();
+            var dbContext = new TestDbContext();
             dbContext.Database.CreateIfNotExists();
         }
-        protected TestDbContext SetupDbContext(bool populateData, PopulateDataMode mode = PopulateDataMode.Normal)
+        protected static TestDbContext SetupDbContext(bool populateData, PopulateDataMode mode = PopulateDataMode.Normal)
         {
-            TestDbContext dbContext = new TestDbContext();
+            var dbContext = new TestDbContext();
             dbContext.Orders.Truncate();
             dbContext.Products.Truncate();
+            dbContext.ProductsWithComplexKey.Truncate();
             dbContext.Database.ClearTable("TphPeople");
             dbContext.Database.ClearTable("TpcCustomer");
             dbContext.Database.ClearTable("TpcVendor");

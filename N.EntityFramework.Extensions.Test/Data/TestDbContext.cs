@@ -10,6 +10,7 @@ namespace N.EntityFramework.Extensions.Test.Data
         private static readonly string _connectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog = N.EntityFramework.Extensions.Test.Data.TestDbContext; Integrated Security = True; MultipleActiveResultSets=True";
         public virtual DbSet<Order> Orders { get; set;  }
         public virtual DbSet<Product> Products { get; set; }
+        public virtual DbSet<ProductWithComplexKey> ProductsWithComplexKey { get; set; }
         public virtual DbSet<TpcPerson> TpcPeople { get; set; }
         public virtual DbSet<TphPerson> TphPeople { get; set; }
         public virtual DbSet<TphCustomer> TphCustomers { get; set; }
