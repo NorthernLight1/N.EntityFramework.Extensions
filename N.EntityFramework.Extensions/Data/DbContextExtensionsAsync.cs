@@ -23,17 +23,17 @@ namespace N.EntityFramework.Extensions
 {
     public static class DbContextExtensionsAsync
     {
-        public async static Task<int> BulkDeleteAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkDeleteAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class
         {
             return await context.BulkDeleteAsync(entities, new BulkDeleteOptions<T>(), cancellationToken);
         }
-        public async static Task<int> BulkDeleteAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkDeleteOptions<T>> optionsAction, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkDeleteAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkDeleteOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class
         {
             return await context.BulkDeleteAsync(entities, optionsAction.Build(), cancellationToken);
         }
-        public async static Task<int> BulkDeleteAsync<T>(this DbContext context, IEnumerable<T> entities, BulkDeleteOptions<T> options, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkDeleteAsync<T>(this DbContext context, IEnumerable<T> entities, BulkDeleteOptions<T> options, CancellationToken cancellationToken = default) where T : class
         {
-            var tableMapping = context.GetTableMapping(typeof(T));
+            var tableMapping = context.GetTableMapping<T>();
 
             using (var dbTransactionContext = new DbTransactionContext(context))
             {
@@ -82,7 +82,7 @@ namespace N.EntityFramework.Extensions
             var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
             if (options.InputColumns != null || options.IgnoreColumns != null)
             {
-                var tableMapping = dbContext.GetTableMapping(typeof(T));
+                var tableMapping = dbContext.GetTableMapping<T>();
                 IEnumerable<string> columnNames = options.InputColumns != null ? options.InputColumns.GetObjectProperties() : tableMapping.GetColumns(true);
                 IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns(columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o)));
                 sqlQuery.SelectColumns(columnsToFetch);
@@ -130,18 +130,18 @@ namespace N.EntityFramework.Extensions
             //close the DataReader
             reader.Close();
         }
-        public async static Task<int> BulkInsertAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkInsertAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class
         {
             return await context.BulkInsertAsync<T>(entities, new BulkInsertOptions<T> { }, cancellationToken);
         }
-        public async static Task<int> BulkInsertAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkInsertOptions<T>> optionsAction, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkInsertAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkInsertOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class
         {
             return await context.BulkInsertAsync<T>(entities, optionsAction.Build(), cancellationToken);
         }
-        public async static Task<int> BulkInsertAsync<T>(this DbContext context, IEnumerable<T> entities, BulkInsertOptions<T> options, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkInsertAsync<T>(this DbContext context, IEnumerable<T> entities, BulkInsertOptions<T> options, CancellationToken cancellationToken = default) where T : class
         {
             int rowsAffected = 0;
-            var tableMapping = context.GetTableMapping(typeof(T));
+            var tableMapping = context.GetTableMapping<T>();
 
             using (var dbTransactionContext = new DbTransactionContext(context))
             {
@@ -254,35 +254,35 @@ namespace N.EntityFramework.Extensions
                 EntityMap = dataReader.EntityMap
             };
         }
-        public async static Task<BulkMergeResult<T>> BulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        public async static Task<BulkMergeResult<T>> BulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class
         {
             return await BulkMergeAsync(context, entities, new BulkMergeOptions<T>(), cancellationToken);
         }
-        public async static Task<BulkMergeResult<T>> BulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, BulkMergeOptions<T> options, CancellationToken cancellationToken = default)
+        public async static Task<BulkMergeResult<T>> BulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, BulkMergeOptions<T> options, CancellationToken cancellationToken = default) where T : class
         {
             return await InternalBulkMergeAsync(context, entities, options, cancellationToken);
         }
-        public async static Task<BulkMergeResult<T>> BulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkMergeOptions<T>> optionsAction, CancellationToken cancellationToken = default)
+        public async static Task<BulkMergeResult<T>> BulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkMergeOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class
         {
             return await BulkMergeAsync(context, entities, optionsAction.Build(), cancellationToken);
         }
-        public async static Task<BulkSyncResult<T>> BulkSyncAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        public async static Task<BulkSyncResult<T>> BulkSyncAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class
         {
             return await BulkSyncAsync(context, entities, new BulkSyncOptions<T>(), cancellationToken);
         }
-        public async static Task<BulkSyncResult<T>> BulkSyncAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkSyncOptions<T>> optionsAction, CancellationToken cancellationToken = default)
+        public async static Task<BulkSyncResult<T>> BulkSyncAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkSyncOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class
         {
             return BulkSyncResult<T>.Map(await InternalBulkMergeAsync(context, entities, optionsAction.Build(), cancellationToken));
         }
-        public async static Task<BulkSyncResult<T>> BulkSyncAsync<T>(this DbContext context, IEnumerable<T> entities, BulkSyncOptions<T> options, CancellationToken cancellationToken = default)
+        public async static Task<BulkSyncResult<T>> BulkSyncAsync<T>(this DbContext context, IEnumerable<T> entities, BulkSyncOptions<T> options, CancellationToken cancellationToken = default) where T : class
         {
             return BulkSyncResult<T>.Map(await InternalBulkMergeAsync(context, entities, options, cancellationToken));
         }
-        private async static Task<BulkMergeResult<T>> InternalBulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, BulkMergeOptions<T> options, CancellationToken cancellationToken = default)
+        private async static Task<BulkMergeResult<T>> InternalBulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, BulkMergeOptions<T> options, CancellationToken cancellationToken = default) where T : class
         {
             int rowsAffected = 0;
             var outputRows = new List<BulkMergeOutputRow<T>>();
-            var tableMapping = context.GetTableMapping(typeof(T));
+            var tableMapping = context.GetTableMapping<T>();
             int rowsInserted = 0;
             int rowsUpdated = 0;
             int rowsDeleted = 0;
@@ -379,19 +379,19 @@ namespace N.EntityFramework.Extensions
                 };
             }
         }
-        public async static Task<int> BulkUpdateAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkUpdateAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class
         {
             return await BulkUpdateAsync<T>(context, entities, new BulkUpdateOptions<T>(), cancellationToken);
         }
-        public async static Task<int> BulkUpdateAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkUpdateOptions<T>> optionsAction, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkUpdateAsync<T>(this DbContext context, IEnumerable<T> entities, Action<BulkUpdateOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class
         {
             return await BulkUpdateAsync<T>(context, entities, optionsAction.Build(), cancellationToken);
         }
-        public async static Task<int> BulkUpdateAsync<T>(this DbContext context, IEnumerable<T> entities, BulkUpdateOptions<T> options, CancellationToken cancellationToken = default)
+        public async static Task<int> BulkUpdateAsync<T>(this DbContext context, IEnumerable<T> entities, BulkUpdateOptions<T> options, CancellationToken cancellationToken = default) where T : class
         {
             int rowsUpdated = 0;
             var outputRows = new List<BulkMergeOutputRow<T>>();
-            var tableMapping = context.GetTableMapping(typeof(T));
+            var tableMapping = context.GetTableMapping<T>();
 
             using (var dbTransactionContext = new DbTransactionContext(context))
             {
@@ -401,8 +401,8 @@ namespace N.EntityFramework.Extensions
                 {
                     string stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
-                    string[] columnNames = tableMapping.GetColumns().ToArray();
                     string[] primaryKeyColumnNames = tableMapping.GetPrimaryKeyColumns().ToArray();
+                    IEnumerable<string> columnNames = CommonUtil.FilterColumns(tableMapping.GetColumns(), primaryKeyColumnNames, options.InputColumns, options.IgnoreColumns);
 
                     if (primaryKeyColumnNames.Length == 0 && options.UpdateOnCondition == null)
                         throw new InvalidDataException("BulkUpdate requires that the entity have a primary key or the Options.UpdateOnCondition must be set.");
@@ -618,13 +618,13 @@ namespace N.EntityFramework.Extensions
         public async static Task ClearAsync<T>(this DbSet<T> dbSet, CancellationToken cancellationToken = default) where T : class
         {
             var dbContext = dbSet.GetDbContext();
-            var tableMapping = dbContext.GetTableMapping(typeof(T));
+            var tableMapping = dbContext.GetTableMapping<T>();
             await dbContext.Database.ClearTableAsync(tableMapping.FullQualifedTableName, cancellationToken);
         }
         public async static Task TruncateAsync<T>(this DbSet<T> dbSet, CancellationToken cancellationToken = default) where T : class
         {
             var dbContext = dbSet.GetDbContext();
-            var tableMapping = dbContext.GetTableMapping(typeof(T));
+            var tableMapping = dbContext.GetTableMapping<T>();
             await dbContext.Database.TruncateTableAsync(tableMapping.FullQualifedTableName, false, cancellationToken);
         }
         private async static Task<QueryToFileResult> InternalQueryToFileAsync<T>(this IQueryable<T> querable, Stream stream, QueryToFileOptions options,

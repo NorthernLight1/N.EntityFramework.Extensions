@@ -114,6 +114,10 @@ namespace N.EntityFramework.Extensions
             {
                 return newExpression.Members.Select(o => o.Name).ToList();
             }
+            else if((expression.Body is UnaryExpression unaryExpression) && (unaryExpression.Operand.GetPrivateFieldValue("Member") is PropertyInfo propertyInfo))
+            {
+                return new List<string>() { propertyInfo.Name };
+            }
             else
             {
                 throw new InvalidOperationException("GetObjectProperties() encountered an unsupported expression type");

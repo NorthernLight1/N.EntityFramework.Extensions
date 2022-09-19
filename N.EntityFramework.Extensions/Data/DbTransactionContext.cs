@@ -9,18 +9,22 @@ namespace N.EntityFramework.Extensions
         private bool closeConnection;
         private bool ownsTransaction;
         private DbContext context;
-        private DbContextTransaction dbContextTransaction;
+        private DbContextTransaction transaction;
 
         public SqlConnection Connection { get; internal set; }
-        public SqlTransaction CurrentTransaction => dbContextTransaction.UnderlyingTransaction as SqlTransaction;
+        public SqlTransaction CurrentTransaction => transaction != null ? transaction.UnderlyingTransaction as SqlTransaction : null;
 
 
 
-        public DbTransactionContext(DbContext context, bool openConnection=true)
+        public DbTransactionContext(DbContext context, bool openConnection = true, bool useTransaction = true)
         {
             this.context = context;
             this.ownsTransaction = context.Database.CurrentTransaction == null;
-            this.dbContextTransaction = context.Database.CurrentTransaction ?? context.Database.BeginTransaction();
+            this.transaction = context.Database.CurrentTransaction;
+            if(useTransaction && transaction == null)
+            {
+                this.transaction = context.Database.BeginTransaction();
+            }
             this.Connection = context.GetSqlConnection();
 
             if (openConnection)
@@ -43,12 +47,13 @@ namespace N.EntityFramework.Extensions
 
         internal void Commit()
         {
-            if (this.ownsTransaction)
-                dbContextTransaction.Commit();
+            if (this.ownsTransaction && this.transaction != null)
+                transaction.Commit();
         }
         internal void Rollback()
         {
-            dbContextTransaction.Rollback();
+            if(transaction != null)
+                transaction.Rollback();
         }
     }
 }
