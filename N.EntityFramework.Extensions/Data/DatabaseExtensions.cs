@@ -28,7 +28,7 @@ namespace N.EntityFramework.Extensions
         {
             string columns = columnNames != null && columnNames.Count() > 0 ? string.Join(",", CommonUtil.FormatColumns(columnNames)) : "*";
             columns = !string.IsNullOrEmpty(internalIdColumnName) ? string.Format("{0},CAST( NULL AS INT) AS {1}", columns, internalIdColumnName) : columns;
-            return database.ExecuteSqlCommand(string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
+            return database.ExecuteSqlCommand(TransactionalBehavior.DoNotEnsureTransaction,string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
         }
         public static int DropTable(this Database database, string tableName, bool ifExists = false)
         {
@@ -47,6 +47,13 @@ namespace N.EntityFramework.Extensions
         public static bool TableExists(this Database database, string tableName)
         {
             return Convert.ToBoolean(database.ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName)));
+        }
+        internal static DbCommand CreateCommand(this Database database, bool useNewConnection = false)
+        {
+            var dbConnection = useNewConnection ? database.Connection : ((ICloneable)database.Connection).Clone() as DbConnection;
+            if (dbConnection.State != ConnectionState.Open)
+                dbConnection.Open();
+            return dbConnection.CreateCommand();
         }
         internal static object ExecuteScalar(this Database database, string query, object[] parameters = null, int? commandTimeout = null)
         {
