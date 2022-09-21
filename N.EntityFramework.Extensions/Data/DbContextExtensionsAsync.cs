@@ -372,10 +372,6 @@ namespace N.EntityFramework.Extensions
                     dbTransactionContext.Rollback();
                     throw;
                 }
-                finally
-                {
-                    context.Database.DropTable(stagingTableName);
-                }
 
                 return new BulkMergeResult<T>
                 {
