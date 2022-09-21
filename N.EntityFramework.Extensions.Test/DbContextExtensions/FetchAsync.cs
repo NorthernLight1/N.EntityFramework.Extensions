@@ -20,7 +20,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             int expectedTotalCount = orders.Count();
             int expectedBatchCount = (int)Math.Ceiling(expectedTotalCount / (decimal)batchSize);
 
-            await orders.FetchAsync(result =>
+            await orders.FetchAsync(async result =>
             {
                 batchCount++;
                 totalCount += result.Results.Count();
@@ -42,7 +42,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             int expectedTotalCount = orders.Count();
             int expectedBatchCount = (int)Math.Ceiling(expectedTotalCount / (decimal)batchSize);
 
-            await orders.FetchAsync(result =>
+            await orders.FetchAsync(async result =>
             {
                 batchCount++;
                 totalCount += result.Results.Count();
@@ -64,7 +64,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             int expectedTotalCount = orders.Count();
             int expectedBatchCount = (int)Math.Ceiling(expectedTotalCount / (decimal)batchSize);
 
-            await orders.FetchAsync(result =>
+            await orders.FetchAsync(async result =>
             {
                 batchCount++;
                 totalCount += result.Results.Count();
@@ -88,7 +88,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             int expectedTotalCount = orders.Count();
             int expectedBatchCount = (int)Math.Ceiling(expectedTotalCount / (decimal)batchSize);
 
-            await orders.FetchAsync(result =>
+            await orders.FetchAsync(async result =>
             {
                 batchCount++;
                 totalCount += result.Results.Count();

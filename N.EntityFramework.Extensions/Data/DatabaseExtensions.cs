@@ -1,14 +1,12 @@
-﻿using N.EntityFramework.Extensions.Util;
+﻿using N.EntityFramework.Extensions.Enums;
+using N.EntityFramework.Extensions.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.Entity;
-using System.Data.Entity.Core.EntityClient;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace N.EntityFramework.Extensions
 {
@@ -33,7 +31,7 @@ namespace N.EntityFramework.Extensions
         public static int DropTable(this Database database, string tableName, bool ifExists = false)
         {
             bool deleteTable = !ifExists || (ifExists && database.TableExists(tableName)) ? true : false;
-            return deleteTable ? database.ExecuteSqlCommand(string.Format("DROP TABLE {0}", tableName)) : -1;
+            return deleteTable ? database.ExecuteSqlCommand(TransactionalBehavior.DoNotEnsureTransaction, string.Format("DROP TABLE {0}", tableName)) : -1;
         }
         public static void TruncateTable(this Database database, string tableName, bool ifExists = false)
         {
@@ -48,9 +46,9 @@ namespace N.EntityFramework.Extensions
         {
             return Convert.ToBoolean(database.ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName)));
         }
-        internal static DbCommand CreateCommand(this Database database, bool useNewConnection = false)
+        internal static DbCommand CreateCommand(this Database database, ConnectionBehavior connectionBehavior = ConnectionBehavior.Default)
         {
-            var dbConnection = useNewConnection ? database.Connection : ((ICloneable)database.Connection).Clone() as DbConnection;
+            var dbConnection = database.GetConnection(connectionBehavior);
             if (dbConnection.State != ConnectionState.Open)
                 dbConnection.Open();
             return dbConnection.CreateCommand();
@@ -73,6 +71,10 @@ namespace N.EntityFramework.Extensions
                 value = sqlCommand.ExecuteScalar();
             }
             return value;
+        }
+        internal static DbConnection GetConnection(this Database database,ConnectionBehavior connectionBehavior)
+        {
+            return connectionBehavior == ConnectionBehavior.New ? ((ICloneable)database.Connection).Clone() as DbConnection : database.Connection;
         }
     }
 }

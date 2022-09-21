@@ -35,7 +35,7 @@ namespace N.EntityFramework.Extensions
         {
             var tableMapping = context.GetTableMapping<T>();
 
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var transaction = dbTransactionContext.CurrentTransaction;
@@ -67,17 +67,13 @@ namespace N.EntityFramework.Extensions
                 return rowsAffected;
             }
         }
-        public async static Task FetchAsync<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, Action<FetchOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class, new()
+        public async static Task FetchAsync<T>(this IQueryable<T> querable, Func<FetchResult<T>, Task> action, Action<FetchOptions<T>> optionsAction, CancellationToken cancellationToken = default) where T : class, new()
         {
             await FetchAsync(querable, action, optionsAction.Build(), cancellationToken);
         }
-        public async static Task FetchAsync<T>(this IQueryable<T> querable, Action<FetchResult<T>> action, FetchOptions<T> options, CancellationToken cancellationToken = default) where T : class, new()
+        public async static Task FetchAsync<T>(this IQueryable<T> querable, Func<FetchResult<T>,Task> action, FetchOptions<T> options, CancellationToken cancellationToken = default) where T : class, new()
         {
             var dbContext = querable.GetDbContext();
-            var dbConnection = dbContext.GetSqlConnection();
-            //Open datbase connection
-            if (dbConnection.State == ConnectionState.Closed)
-                dbConnection.Open();
 
             var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
             if (options.InputColumns != null || options.IgnoreColumns != null)
@@ -87,48 +83,51 @@ namespace N.EntityFramework.Extensions
                 IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns(columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o)));
                 sqlQuery.SelectColumns(columnsToFetch);
             }
-            var command = new SqlCommand(sqlQuery.Sql, dbConnection);
-            command.Parameters.AddRange(sqlQuery.Parameters);
-            var reader = await command.ExecuteReaderAsync(cancellationToken);
+            using (var command = dbContext.Database.CreateCommand(Enums.ConnectionBehavior.New))
+            {
+                command.CommandText = sqlQuery.Sql;
+                command.Parameters.AddRange(sqlQuery.Parameters);
+                var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            List<PropertyInfo> propertySetters = new List<PropertyInfo>();
-            var entityType = typeof(T);
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                propertySetters.Add(entityType.GetProperty(reader.GetName(i)));
-            }
-            //Read data
-            int batch = 1;
-            int count = 0;
-            int totalCount = 0;
-            var entities = new List<T>();
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var entity = new T();
+                List<PropertyInfo> propertySetters = new List<PropertyInfo>();
+                var entityType = typeof(T);
                 for (int i = 0; i < reader.FieldCount; i++)
                 {
-                    var value = reader.GetValue(i);
-                    if (value == DBNull.Value)
-                        value = null;
-                    propertySetters[i].SetValue(entity, value);
+                    propertySetters.Add(entityType.GetProperty(reader.GetName(i)));
                 }
-                entities.Add(entity);
-                count++;
-                totalCount++;
-                if (count == options.BatchSize)
+                //Read data
+                int batch = 1;
+                int count = 0;
+                int totalCount = 0;
+                var entities = new List<T>();
+                while (await reader.ReadAsync(cancellationToken))
                 {
-                    action(new FetchResult<T> { Results = entities, Batch = batch });
-                    entities.Clear();
-                    count = 0;
-                    batch++;
+                    var entity = new T();
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        var value = reader.GetValue(i);
+                        if (value == DBNull.Value)
+                            value = null;
+                        propertySetters[i].SetValue(entity, value);
+                    }
+                    entities.Add(entity);
+                    count++;
+                    totalCount++;
+                    if (count == options.BatchSize)
+                    {
+                        await action(new FetchResult<T> { Results = entities, Batch = batch });
+                        entities.Clear();
+                        count = 0;
+                        batch++;
+                    }
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
-                cancellationToken.ThrowIfCancellationRequested();
-            }
 
-            if (entities.Count > 0)
-                action(new FetchResult<T> { Results = entities, Batch = batch });
-            //close the DataReader
-            reader.Close();
+                if (entities.Count > 0)
+                    await action(new FetchResult<T> { Results = entities, Batch = batch });
+                //close the DataReader
+                reader.Close();
+            }
         }
         public async static Task<int> BulkInsertAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class
         {
@@ -143,7 +142,7 @@ namespace N.EntityFramework.Extensions
             int rowsAffected = 0;
             var tableMapping = context.GetTableMapping<T>();
 
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 try
                 {
@@ -286,14 +285,15 @@ namespace N.EntityFramework.Extensions
             int rowsInserted = 0;
             int rowsUpdated = 0;
             int rowsDeleted = 0;
+            string stagingTableName = String.Empty;
 
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var transaction = dbTransactionContext.CurrentTransaction;
                 try
                 {
-                    string stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
+                    stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
                     string[] columnNames = tableMapping.GetColumns().ToArray();
                     string[] primaryKeyColumnNames = tableMapping.GetPrimaryKeyColumns().ToArray();
@@ -372,6 +372,10 @@ namespace N.EntityFramework.Extensions
                     dbTransactionContext.Rollback();
                     throw;
                 }
+                finally
+                {
+                    context.Database.DropTable(stagingTableName);
+                }
 
                 return new BulkMergeResult<T>
                 {
@@ -397,7 +401,7 @@ namespace N.EntityFramework.Extensions
             var outputRows = new List<BulkMergeOutputRow<T>>();
             var tableMapping = context.GetTableMapping<T>();
 
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var transaction = dbTransactionContext.CurrentTransaction;
@@ -410,7 +414,7 @@ namespace N.EntityFramework.Extensions
 
                     if (primaryKeyColumnNames.Length == 0 && options.UpdateOnCondition == null)
                         throw new InvalidDataException("BulkUpdate requires that the entity have a primary key or the Options.UpdateOnCondition must be set.");
-
+                    
                     context.Database.CloneTable(destinationTableName, stagingTableName);
                     await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity);
 
@@ -420,7 +424,7 @@ namespace N.EntityFramework.Extensions
                     string updateSql = string.Format("UPDATE t SET {0} FROM {1} AS s JOIN {2} AS t ON {3}; SELECT @@RowCount;",
                         updateSetExpression, stagingTableName, destinationTableName, CommonUtil<T>.GetJoinConditionSql(options.UpdateOnCondition, primaryKeyColumnNames, "s", "t"));
 
-                    rowsUpdated = await context.Database.ExecuteSqlCommandAsync(updateSql, cancellationToken);
+                    rowsUpdated = await context.Database.ExecuteSqlCommandAsync(options.TransactionalBehavior, updateSql, cancellationToken);
                     context.Database.DropTable(stagingTableName);
 
                     //ClearEntityStateToUnchanged(context, entities);
@@ -439,7 +443,7 @@ namespace N.EntityFramework.Extensions
         {
             var results = new List<object[]>();
             var columns = new List<string>();
-            var command = context.Database.Connection.CreateCommand();
+            var command = context.Database.CreateCommand(options.ConnectionBehavior);
             command.Transaction = transaction;
             command.CommandText = sqlText;
             if (options.CommandTimeout.HasValue)

@@ -41,7 +41,7 @@ namespace N.EntityFramework.Extensions
             int rowsAffected = 0;
             var tableMapping = context.GetTableMapping<T>();
             
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var transaction = dbTransactionContext.CurrentTransaction;
@@ -87,7 +87,7 @@ namespace N.EntityFramework.Extensions
             var tableMapping = context.GetTableMapping<T>();
             var dbConnection = context.GetSqlConnection();
 
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 try
                 {
@@ -233,7 +233,7 @@ namespace N.EntityFramework.Extensions
             int rowsUpdated = 0;
             int rowsDeleted = 0;
 
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 try
                 {
@@ -341,7 +341,7 @@ namespace N.EntityFramework.Extensions
             var tableMapping = context.GetTableMapping<T>();
             var dbConnection = context.GetSqlConnection();
 
-            using (var dbTransactionContext = new DbTransactionContext(context))
+            using (var dbTransactionContext = new DbTransactionContext(context, options))
             {
                 try
                 {
@@ -393,7 +393,7 @@ namespace N.EntityFramework.Extensions
                 IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns(columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o)));
                 sqlQuery.SelectColumns(columnsToFetch);
             }
-            using (var command = dbContext.Database.CreateCommand(false))
+            using (var command = dbContext.Database.CreateCommand(Enums.ConnectionBehavior.New))
             {
                 command.CommandText = sqlQuery.Sql;
                 command.Parameters.AddRange(sqlQuery.Parameters);
