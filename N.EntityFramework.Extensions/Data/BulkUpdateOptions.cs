@@ -5,6 +5,7 @@ namespace N.EntityFramework.Extensions
 {
     public class BulkUpdateOptions<T> : BulkOptions
     {
+        public Expression<Func<T, object>> InputColumns { get; set; }
         public Expression<Func<T, object>> IgnoreColumns { get; set; }
         [Obsolete("BulkUpdateOptions.IgnoreColumnsOnUpdate has been replaced by IgnoreColumns.")]
         public Expression<Func<T, object>> IgnoreColumnsOnUpdate { get { return IgnoreColumns; } set { IgnoreColumns = value; } }

@@ -8,7 +8,9 @@ namespace N.EntityFramework.Extensions
     {
         public Expression<Func<T, object>> IgnoreColumns { get; set; }
         public Expression<Func<T, object>> InputColumns { get; set; }
-        public bool AutoMapOutputIdentity { get; set; }
+        public bool AutoMapOutput { get; set; }
+        [Obsolete("BulkMergeOptions.AutoMapOutputIdentity has been replaced by AutoMapOutput.")]
+        public bool AutoMapOutputIdentity { get { return AutoMapOutput; } set { AutoMapOutput = value; } }
         public bool KeepIdentity { get; set; }
         public bool InsertIfNotExists { get; set; }
         public Expression<Func<T, T, bool>> InsertOnCondition { get; set; }
@@ -20,7 +22,7 @@ namespace N.EntityFramework.Extensions
 
         public BulkInsertOptions()
         {
-            this.AutoMapOutputIdentity = true;
+            this.AutoMapOutput = true;
             this.InsertIfNotExists = false;
         }
     }

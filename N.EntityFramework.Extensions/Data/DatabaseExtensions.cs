@@ -1,14 +1,12 @@
-﻿using N.EntityFramework.Extensions.Util;
+﻿using N.EntityFramework.Extensions.Enums;
+using N.EntityFramework.Extensions.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.Entity;
-using System.Data.Entity.Core.EntityClient;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace N.EntityFramework.Extensions
 {
@@ -28,12 +26,12 @@ namespace N.EntityFramework.Extensions
         {
             string columns = columnNames != null && columnNames.Count() > 0 ? string.Join(",", CommonUtil.FormatColumns(columnNames)) : "*";
             columns = !string.IsNullOrEmpty(internalIdColumnName) ? string.Format("{0},CAST( NULL AS INT) AS {1}", columns, internalIdColumnName) : columns;
-            return database.ExecuteSqlCommand(string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
+            return database.ExecuteSqlCommand(TransactionalBehavior.DoNotEnsureTransaction,string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
         }
         public static int DropTable(this Database database, string tableName, bool ifExists = false)
         {
             bool deleteTable = !ifExists || (ifExists && database.TableExists(tableName)) ? true : false;
-            return deleteTable ? database.ExecuteSqlCommand(string.Format("DROP TABLE {0}", tableName)) : -1;
+            return deleteTable ? database.ExecuteSqlCommand(TransactionalBehavior.DoNotEnsureTransaction, string.Format("DROP TABLE {0}", tableName)) : -1;
         }
         public static void TruncateTable(this Database database, string tableName, bool ifExists = false)
         {
@@ -47,6 +45,13 @@ namespace N.EntityFramework.Extensions
         public static bool TableExists(this Database database, string tableName)
         {
             return Convert.ToBoolean(database.ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName)));
+        }
+        internal static DbCommand CreateCommand(this Database database, ConnectionBehavior connectionBehavior = ConnectionBehavior.Default)
+        {
+            var dbConnection = database.GetConnection(connectionBehavior);
+            if (dbConnection.State != ConnectionState.Open)
+                dbConnection.Open();
+            return dbConnection.CreateCommand();
         }
         internal static object ExecuteScalar(this Database database, string query, object[] parameters = null, int? commandTimeout = null)
         {
@@ -66,6 +71,10 @@ namespace N.EntityFramework.Extensions
                 value = sqlCommand.ExecuteScalar();
             }
             return value;
+        }
+        internal static DbConnection GetConnection(this Database database,ConnectionBehavior connectionBehavior)
+        {
+            return connectionBehavior == ConnectionBehavior.New ? ((ICloneable)database.Connection).Clone() as DbConnection : database.Connection;
         }
     }
 }

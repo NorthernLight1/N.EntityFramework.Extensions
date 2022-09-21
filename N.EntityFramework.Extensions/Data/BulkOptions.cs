@@ -1,5 +1,7 @@
-﻿using System;
+﻿using N.EntityFramework.Extensions.Enums;
+using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,5 +13,14 @@ namespace N.EntityFramework.Extensions
         public int BatchSize { get; set; }
         public bool UsePermanentTable { get; set; }
         public int? CommandTimeout { get; set; }
+        internal TransactionalBehavior TransactionalBehavior { get; set; }
+        internal ConnectionBehavior ConnectionBehavior { get; set; }
+
+        public BulkOptions()
+        {
+            BatchSize = 1000;
+            TransactionalBehavior = TransactionalBehavior.EnsureTransaction;
+            ConnectionBehavior = ConnectionBehavior.Default;
+        }
     }
 }
