@@ -88,7 +88,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
                     }
 
                     Debug.WriteLine("Last Id for Product is {0}", id);
-                    dbContext.BulkInsert(products, new BulkInsertOptions<Product>() { KeepIdentity = false, AutoMapOutputIdentity = false });
+                    dbContext.BulkInsert(products, new BulkInsertOptions<Product>() { KeepIdentity = false, AutoMapOutput = false });
                 }
                 else if (mode == PopulateDataMode.Tph)
                 {
