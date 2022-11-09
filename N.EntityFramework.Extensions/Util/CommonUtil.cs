@@ -24,6 +24,10 @@ namespace N.EntityFramework.Extensions.Util
         {
             return columns.Select(s => s.StartsWith("[") && s.EndsWith("]") ? s : string.Format("[{0}]", s));
         }
+        internal static IEnumerable<string> FormatColumns(string tableAlias, IEnumerable<string> columns)
+        {
+            return columns.Select(s => s.StartsWith("[") && s.EndsWith("]") ? string.Format("[{0}].{1}", tableAlias, s) : string.Format("[{0}].[{1}]", tableAlias, s));
+        }
         internal static IEnumerable<string> FilterColumns<T>(IEnumerable<string> columnNames, string[] primaryKeyColumnNames, Expression<Func<T, object>> inputColumns, Expression<Func<T, object>> ignoreColumns)
         {
             var filteredColumnNames = columnNames;
