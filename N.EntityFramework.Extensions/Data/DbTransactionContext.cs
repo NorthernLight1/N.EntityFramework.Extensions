@@ -18,11 +18,11 @@ namespace N.EntityFramework.Extensions
         public SqlTransaction CurrentTransaction => transaction != null ? transaction.UnderlyingTransaction as SqlTransaction : null;
 
 
-        public DbTransactionContext(DbContext context, BulkOptions options) : this(context, options.TransactionalBehavior, options.ConnectionBehavior, options.CommandTimeout)
+        public DbTransactionContext(DbContext context, BulkOptions options) : this(context, options.ConnectionBehavior, options.TransactionalBehavior, options.CommandTimeout)
         {
 
         }
-        public DbTransactionContext(DbContext context, TransactionalBehavior transactionalBehavior = TransactionalBehavior.DoNotEnsureTransaction, ConnectionBehavior connectionBehavior = ConnectionBehavior.Default, int? commandTimeout = null, bool openConnection = true)
+        public DbTransactionContext(DbContext context, ConnectionBehavior connectionBehavior = ConnectionBehavior.Default, TransactionalBehavior transactionalBehavior = TransactionalBehavior.DoNotEnsureTransaction, int? commandTimeout = null, bool openConnection = true)
         {
             this.context = context;
             this.ownsTransaction = context.Database.CurrentTransaction == null;

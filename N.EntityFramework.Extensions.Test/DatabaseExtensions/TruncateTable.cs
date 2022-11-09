@@ -7,7 +7,7 @@ namespace N.EntityFramework.Extensions.Test.DatabaseExtensions
     public class TruncateTable : DatabaseExtensionsBase
     {
         [TestMethod]
-        public void With_Orders_Table()
+        public void With_TableName()
         {
             var dbContext = SetupDbContext(true);
             int oldOrdersCount = dbContext.Orders.Count();
