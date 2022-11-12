@@ -1,8 +1,10 @@
 ﻿using N.EntityFramework.Extensions.Common;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity.Core.Mapping;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -12,6 +14,7 @@ namespace N.EntityFramework.Extensions
     {
         public TableMapping TableMapping { get; set; }
         public Dictionary<long,T> EntityMap { get; set; }
+        private readonly Dictionary<int, string> columnNames;
         private readonly Dictionary<string, int> columnIndexes;
         private long currentId;
         private readonly bool useInternalId;
@@ -19,10 +22,12 @@ namespace N.EntityFramework.Extensions
         private readonly IEnumerable<T> entities;
         private readonly IEnumerator<T> enumerator;
         private Dictionary<int, Func<T, object>> selectors;
+        private EntityValueMode valueMode;
         private readonly Dictionary<int, ConditionPropertyMapping> conditions;
 
         public EntityDataReader(TableMapping tableMapping, IEnumerable<T> entities, IEnumerable<string> inputColumns, bool useInternalId)
         {
+            this.columnNames = new Dictionary<int, string>();
             this.columnIndexes = new Dictionary<string, int>();
             this.currentId = 0;
             this.useInternalId = useInternalId;
@@ -34,19 +39,39 @@ namespace N.EntityFramework.Extensions
             this.EntityMap = new Dictionary<long, T>();
             this.FieldCount = 0;
             this.TableMapping = tableMapping;
-            
 
             int i = 0;
             foreach (var column in tableMapping.Columns)
             {
                 if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
                 {
-                    var type = Expression.Parameter(typeof(T), "type");
-                    var propertyExpression = Expression.PropertyOrField(type, column.Property.Name);
-                    var expression = Expression.Lambda<Func<T, object>>(Expression.Convert(propertyExpression, typeof(object)), type);
-                    selectors[i] = expression.Compile();
                     columnIndexes[column.Property.Name] = i;
+                    columnNames[i] = column.Property.Name;
                     i++;
+                }
+            }
+            var type = typeof(T);
+            if (type.IsValueType || type == typeof(string))
+            {
+                this.valueMode = EntityValueMode.Value;
+            }
+            else if (type == typeof(object))
+            {
+                this.valueMode = EntityValueMode.Object;
+            }
+            else if(type.IsArray)
+            {
+                this.valueMode = EntityValueMode.Array;
+            }
+            else
+            {
+                this.valueMode = EntityValueMode.MemberAccess;
+                foreach (var column in columnIndexes)
+                {
+                    var typeExpression = Expression.Parameter(typeof(T), "type");
+                    var propertyExpression = Expression.PropertyOrField(typeExpression, column.Key);
+                    var expression = Expression.Lambda<Func<T, object>>(Expression.Convert(propertyExpression, typeof(object)), typeExpression);
+                    selectors[column.Value] = expression.Compile();
                 }
             }
             foreach(var condition in TableMapping.Conditions)
@@ -195,7 +220,39 @@ namespace N.EntityFramework.Extensions
             }
             else
             {
-                return i < selectors.Count ? selectors[i](enumerator.Current) : conditions[i].GetPrivateFieldValue("Value");
+                if (this.valueMode == EntityValueMode.Value)
+                {
+                    return enumerator.Current;
+                }
+                else if(this.valueMode == EntityValueMode.Object)
+                {
+                    var obj = (dynamic)enumerator.Current;
+                    if (obj is IDynamicMetaObjectProvider)
+                    {
+                        return ((IDictionary<string, object>)obj)[this.columnNames[i]];
+                    }
+                    else
+                    {
+                        var property = obj.GetType().GetProperty(this.columnNames[i]);
+                        if (property != null)
+                        {
+                            return property.GetValue(obj, null);
+                        }
+                        else
+                        {
+                            return obj;
+                        }
+                    }
+                }
+                else if(this.valueMode == EntityValueMode.Array)
+                {
+                    var array = enumerator.Current as object[];
+                    return array[i];
+                }
+                else
+                {
+                    return i < selectors.Count ? selectors[i](enumerator.Current) : conditions[i].GetPrivateFieldValue("Value");
+                }
             }
             
         }
@@ -226,6 +283,14 @@ namespace N.EntityFramework.Extensions
             }
             return moveNext;
         }
+    }
+
+    public enum EntityValueMode
+    {
+        Value=1,
+        Object=2,
+        MemberAccess = 3,
+        Array = 4
     }
 }
 

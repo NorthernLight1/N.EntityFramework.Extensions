@@ -3,6 +3,7 @@ using N.EntityFramework.Extensions.Extensions;
 using N.EntityFramework.Extensions.Sql;
 using N.EntityFramework.Extensions.Util;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
@@ -73,16 +74,17 @@ namespace N.EntityFramework.Extensions
                 return rowsAffected;
             }
         }
-        public static IEnumerable<T> BulkFetch<T>(this DbContext context, IEnumerable<T> entities) where T : class, new()
+        public static IEnumerable<T> BulkFetch<T,U>(this DbSet<T> dbSet, IEnumerable<U> entities) where T : class, new()
         {
-            return context.BulkFetch(entities, new BulkFetchOptions<T>());
+            return dbSet.BulkFetch(entities, new BulkFetchOptions<T>());
         }
-        public static IEnumerable<T> BulkFetch<T>(this DbContext context, IEnumerable<T> entities, Action<BulkFetchOptions<T>> optionsAction) where T : class, new()
+        public static IEnumerable<T> BulkFetch<T,U>(this DbSet<T> dbSet, IEnumerable<U> entities, Action<BulkFetchOptions<T>> optionsAction) where T : class, new()
         {
-            return context.BulkFetch(entities, optionsAction.Build());
+            return dbSet.BulkFetch(entities, optionsAction.Build());
         }
-        public static IEnumerable<T> BulkFetch<T>(this DbContext context, IEnumerable<T> entities, BulkFetchOptions<T> options) where T : class, new()
+        public static IEnumerable<T> BulkFetch<T,U>(this DbSet<T> dbSet, IEnumerable<U> entities, BulkFetchOptions<T> options) where T : class, new()
         {
+            var context = dbSet.GetDbContext();
             var tableMapping = context.GetTableMapping<T>();
 
             using (var dbTransactionContext = new DbTransactionContext(context, Enums.ConnectionBehavior.New, TransactionalBehavior.DoNotEnsureTransaction))
@@ -96,7 +98,7 @@ namespace N.EntityFramework.Extensions
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
                     string[] keyColumnNames = options.JoinOnCondition != null ? CommonUtil<T>.GetColumns(options.JoinOnCondition, new[] { "s" })
                         : tableMapping.GetPrimaryKeyColumns().ToArray();
-                    IEnumerable<string> columnNames = CommonUtil.FilterColumns(tableMapping.GetColumns(true), keyColumnNames, options.InputColumns, options.IgnoreColumns);
+                    IEnumerable<string> columnNames = CommonUtil.FilterColumns<T>(tableMapping.GetColumns(true, true), keyColumnNames);
                     IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns("t", columnNames);
 
                     if (keyColumnNames.Length == 0 && options.JoinOnCondition == null)

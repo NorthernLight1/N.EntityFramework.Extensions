@@ -39,6 +39,11 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
   var orders = dbcontext.Orders.Where(o => o.TotalPrice < 5.35M);  
   dbcontext.BulkDelete(orders);
   ```
+  **BulkFetch() - Retrieves entities that are contained in a list**  
+  ```
+  var ids = new List<int> { 10001, 10002, 10003, 10004, 10005 };
+  var products = dbcontext.Products.BulkFetch(ids, options => { options.JoinOnCondition = (s, t) => s.Id == t.Id; }).ToList();
+  ```
   **BulkUpdate() - Performs a update operation with a large number of entities**  
   ```
   var dbcontext = new MyDbContext();  
