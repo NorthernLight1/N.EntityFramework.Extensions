@@ -9,7 +9,7 @@
 
 The framework currently supports the following operations:
 
-Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
+Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkFetch, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
 
 Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hierarchy, Table-Per-Concrete)
 
@@ -153,6 +153,11 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | BulkDeleteAsync(items, cancellationToken)  | Bulk delete entities asynchronously in your database.  |
 | BulkDeleteAsync(items, options)  | Bulk delete entities asynchronously in your database.  |
 | BulkDeleteAsync(items, options, cancellationToken)  | Bulk delete entities asynchronously in your database.  |
+| **BulkFetch** |
+| BulkFetch<T>(items)  | Retrieve entities that are contained in the items list.  |
+| BulkFetch<T>(items, options)  | Retrieve entities that are contained in the items list.  |
+| BulkFetchAsync<T>(items)  | Retrieve entities that are contained in the items list.  |
+| BulkFetchAsync<T>(items, options)  | Retrieve entities that are contained in the items list.  | 
 | **BulkInsert** |
 | BulkInsert<T>(items)  | Bulk insert entities in your database.  |
 | BulkInsert<T>(items, options)  | Bulk insert entities in your database.   |
