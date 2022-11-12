@@ -40,10 +40,10 @@ namespace N.EntityFramework.Extensions
         {
             return this.Columns.Where(o => o.Column.IsStoreGeneratedComputed || (storeGeneratedIdentity && o.Column.IsStoreGeneratedIdentity)).Select(o => o.Column.Name);
         }
-        public IEnumerable<string> GetColumns(bool keepIdentity = false)
+        public IEnumerable<string> GetColumns(bool includeIdentity = false, bool includeComputed = false)
         {
             var columns = new List<string>();
-            columns.AddRange(this.Columns.Where(o => !o.Column.IsStoreGeneratedComputed && (keepIdentity || !o.Column.IsStoreGeneratedIdentity)).Select(o => o.Column.Name));
+            columns.AddRange(this.Columns.Where(o => (!o.Column.IsStoreGeneratedComputed || includeComputed) && (includeIdentity || !o.Column.IsStoreGeneratedIdentity)).Select(o => o.Column.Name));
             columns.AddRange(this.Conditions.Select(o => o.Column.Name));
             return columns;
         }

@@ -3,6 +3,7 @@ using N.EntityFramework.Extensions.Extensions;
 using N.EntityFramework.Extensions.Sql;
 using N.EntityFramework.Extensions.Util;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
@@ -48,7 +49,7 @@ namespace N.EntityFramework.Extensions
                 var transaction = dbTransactionContext.CurrentTransaction;
                 try
                 {
-                    string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
+                    string stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
                     string[] keyColumnNames = options.DeleteOnCondition != null ? CommonUtil<T>.GetColumns(options.DeleteOnCondition, new[] { "s" }) 
                         : tableMapping.GetPrimaryKeyColumns().ToArray();
@@ -73,7 +74,57 @@ namespace N.EntityFramework.Extensions
                 return rowsAffected;
             }
         }
+        public static IEnumerable<T> BulkFetch<T,U>(this DbSet<T> dbSet, IEnumerable<U> entities) where T : class, new()
+        {
+            return dbSet.BulkFetch(entities, new BulkFetchOptions<T>());
+        }
+        public static IEnumerable<T> BulkFetch<T,U>(this DbSet<T> dbSet, IEnumerable<U> entities, Action<BulkFetchOptions<T>> optionsAction) where T : class, new()
+        {
+            return dbSet.BulkFetch(entities, optionsAction.Build());
+        }
+        public static IEnumerable<T> BulkFetch<T,U>(this DbSet<T> dbSet, IEnumerable<U> entities, BulkFetchOptions<T> options) where T : class, new()
+        {
+            var context = dbSet.GetDbContext();
+            var tableMapping = context.GetTableMapping<T>();
 
+            using (var dbTransactionContext = new DbTransactionContext(context, Enums.ConnectionBehavior.New, TransactionalBehavior.DoNotEnsureTransaction))
+            {
+                string selectSql, stagingTableName = string.Empty;
+                var dbConnection = dbTransactionContext.Connection;
+                var transaction = dbTransactionContext.CurrentTransaction;
+                try
+                {
+                    stagingTableName = CommonUtil.GetStagingTableName(tableMapping, true, dbConnection);
+                    string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
+                    string[] keyColumnNames = options.JoinOnCondition != null ? CommonUtil<T>.GetColumns(options.JoinOnCondition, new[] { "s" })
+                        : tableMapping.GetPrimaryKeyColumns().ToArray();
+                    IEnumerable<string> columnNames = CommonUtil.FilterColumns<T>(tableMapping.GetColumns(true, true), keyColumnNames, options.InputColumns, options.IgnoreColumns);
+                    IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns("t", columnNames);
+
+                    if (keyColumnNames.Length == 0 && options.JoinOnCondition == null)
+                        throw new InvalidDataException("BulkFetch requires that the entity have a primary key or the Options.JoinOnCondition must be set.");
+
+                    context.Database.CloneTable(destinationTableName, stagingTableName, keyColumnNames);
+                    BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlBulkCopyOptions.KeepIdentity, false, false);
+                    selectSql = string.Format("SELECT {0} FROM {1} s JOIN {2} t ON {3}", SqlUtil.ConvertToColumnString(columnsToFetch),  stagingTableName, destinationTableName,
+                        CommonUtil<T>.GetJoinConditionSql(options.JoinOnCondition, keyColumnNames));
+
+                    
+                    dbTransactionContext.Commit();
+                }
+                catch (Exception)
+                {
+                    dbTransactionContext.Rollback();
+                    throw;
+                }
+
+                foreach (var item in context.FetchInternal<T>(selectSql))
+                {
+                    yield return item;
+                }
+                context.Database.DropTable(stagingTableName);
+            }
+        }
         public static int BulkInsert<T>(this DbContext context, IEnumerable<T> entities) where T : class
         {
             return context.BulkInsert<T>(entities, new BulkInsertOptions<T>());
@@ -93,7 +144,7 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var transaction = dbTransactionContext.CurrentTransaction;
-                    string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
+                    string stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
 
                     string[] primaryKeyColumnNames = tableMapping.GetPrimaryKeyColumns().ToArray();
@@ -239,7 +290,7 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var transaction = dbTransactionContext.CurrentTransaction;
-                    string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
+                    string stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
                     IEnumerable<string> columnNames = tableMapping.GetColumns();
                     string[] primaryKeyColumnNames = tableMapping.GetPrimaryKeyColumns().ToArray();
@@ -342,7 +393,7 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var transaction = dbTransactionContext.CurrentTransaction;
-                    string stagingTableName = GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
+                    string stagingTableName = CommonUtil.GetStagingTableName(tableMapping, options.UsePermanentTable, dbConnection);
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
                     string[] primaryKeyColumnNames = tableMapping.GetPrimaryKeyColumns().ToArray();
                     IEnumerable<string> columnNames = CommonUtil.FilterColumns(tableMapping.GetColumns(), primaryKeyColumnNames, options.InputColumns, options.IgnoreColumns);
@@ -435,7 +486,38 @@ namespace N.EntityFramework.Extensions
                 reader.Close();
             }
         }
+        private static IEnumerable<T> FetchInternal<T>(this DbContext dbContext, string sqlText, object[] parameters = null) where T : class, new()
+        {
+            using (var command = dbContext.Database.CreateCommand(Enums.ConnectionBehavior.New))
+            {
+                command.CommandText = sqlText;
+                if (parameters != null)
+                    command.Parameters.AddRange(parameters);
 
+                var reader = command.ExecuteReader();
+
+                List<PropertyInfo> propertySetters = new List<PropertyInfo>();
+                var entityType = typeof(T);
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    propertySetters.Add(entityType.GetProperty(reader.GetName(i)));
+                }
+                while (reader.Read())
+                {
+                    var entity = new T();
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        var value = reader.GetValue(i);
+                        if (value == DBNull.Value)
+                            value = null;
+                        propertySetters[i].SetValue(entity, value);
+                    }
+                    yield return entity;
+                }
+                //close the DataReader
+                reader.Close();
+            }
+        }
         private static void ClearEntityStateToUnchanged<T>(DbContext dbContext, IEnumerable<T> entities)
         {
             bool autoDetectCahngesEnabled = dbContext.Configuration.AutoDetectChangesEnabled;
@@ -448,17 +530,6 @@ namespace N.EntityFramework.Extensions
             }
             dbContext.Configuration.AutoDetectChangesEnabled = autoDetectCahngesEnabled;
         }
-
-        private static string GetStagingTableName(TableMapping tableMapping, bool usePermanentTable, SqlConnection sqlConnection)
-        {
-            string tableName;
-            if (usePermanentTable)
-                tableName = string.Format("[{0}].[tmp_be_xx_{1}_{2}]", tableMapping.Schema, tableMapping.TableName, sqlConnection.ClientConnectionId.ToString());
-            else
-                tableName = string.Format("[{0}].[#tmp_be_xx_{1}]", tableMapping.Schema, tableMapping.TableName);
-            return tableName;
-        }
-
         private static BulkQueryResult BulkQuery(this DbContext context, string sqlText, SqlConnection dbConnection, SqlTransaction transaction, BulkOptions options)
         {
             var results = new List<object[]>();
@@ -723,11 +794,15 @@ namespace N.EntityFramework.Extensions
             var tableMapping = dbContext.GetTableMapping<T>();
             dbContext.Database.ClearTable(tableMapping.FullQualifedTableName);
         }
+        public static void Truncate<T>(this DbContext dbContext) where T : class
+        {
+            var tableMapping = dbContext.GetTableMapping<T>();
+            dbContext.Database.TruncateTable(tableMapping.FullQualifedTableName);
+        }
         public static void Truncate<T>(this DbSet<T> dbSet) where T : class
         {
             var dbContext = dbSet.GetDbContext();
-            var tableMapping = dbContext.GetTableMapping<T>();
-            dbContext.Database.TruncateTable(tableMapping.FullQualifedTableName);
+            dbContext.Truncate<T>();
         }
         internal static DbContext GetDbContext<T>(this IQueryable<T> querable)
         {
@@ -749,12 +824,12 @@ namespace N.EntityFramework.Extensions
                 }
                 else
                 {
-                    throw new NotSupportedException();
+                    throw new NotSupportedException("This extension method requires a DbQuery<T> or ObjectQuery<T> instance");
                 }
             }
             catch
             {
-                throw new NotSupportedException("This extension method requires a DbQuery<T> or ObjectQuery<T> instance");
+                throw;
             }
             return dbContext;
         }
@@ -815,7 +890,7 @@ namespace N.EntityFramework.Extensions
         {
             return context.Database.Connection as SqlConnection;
         }
-        public static TableMapping GetTableMapping<T>(this IObjectContextAdapter context) where T : class
+        internal static TableMapping GetTableMapping<T>(this IObjectContextAdapter context) where T : class
         {
             var type = typeof(T);
             var metadata = context.ObjectContext.MetadataWorkspace;
