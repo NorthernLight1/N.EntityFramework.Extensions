@@ -12,7 +12,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
         {
             var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price == 1.25M).ToList();
-            var fetchedOrders = dbContext.BulkFetch(orders);
+            var fetchedOrders = dbContext.Orders.BulkFetch(orders);
             bool ordersAreMatched = true;
 
             foreach(var fetchedOrder in fetchedOrders)
@@ -34,7 +34,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
         {
             var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId != null);
-            var fetchedOrders = dbContext.BulkFetch(orders, options => {  options.IgnoreColumns = o => new { o.ExternalId }; }).ToList();
+            var fetchedOrders = dbContext.Orders.BulkFetch(orders, options => {  options.IgnoreColumns = o => new { o.ExternalId }; }).ToList();
             int newTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
             bool foundNullExternalId = fetchedOrders.Where(o => o.ExternalId != null).Any();
 

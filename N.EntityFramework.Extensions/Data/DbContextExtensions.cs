@@ -98,7 +98,7 @@ namespace N.EntityFramework.Extensions
                     string destinationTableName = string.Format("[{0}].[{1}]", tableMapping.Schema, tableMapping.TableName);
                     string[] keyColumnNames = options.JoinOnCondition != null ? CommonUtil<T>.GetColumns(options.JoinOnCondition, new[] { "s" })
                         : tableMapping.GetPrimaryKeyColumns().ToArray();
-                    IEnumerable<string> columnNames = CommonUtil.FilterColumns<T>(tableMapping.GetColumns(true, true), keyColumnNames);
+                    IEnumerable<string> columnNames = CommonUtil.FilterColumns<T>(tableMapping.GetColumns(true, true), keyColumnNames, options.InputColumns, options.IgnoreColumns);
                     IEnumerable<string> columnsToFetch = CommonUtil.FormatColumns("t", columnNames);
 
                     if (keyColumnNames.Length == 0 && options.JoinOnCondition == null)
