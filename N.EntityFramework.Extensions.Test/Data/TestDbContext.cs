@@ -15,6 +15,7 @@ namespace N.EntityFramework.Extensions.Test.Data
         public virtual DbSet<TphPerson> TphPeople { get; set; }
         public virtual DbSet<TphCustomer> TphCustomers { get; set; }
         public virtual DbSet<TphVendor> TphVendors { get; set; }
+        public virtual DbSet<ProductProperty> ProductProperties { get; set; }
 
         public TestDbContext() : base(_connectionString)
         {
@@ -22,6 +23,8 @@ namespace N.EntityFramework.Extensions.Test.Data
         }
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Product>().HasOptional(p => p.Properties).WithRequired(p => p.Product);
+
         	//modelBuilder.Entity<TphPerson>().Property<DateTime>("CreatedDate");
             modelBuilder.Entity<TpcCustomer>().Map(m =>
             {

@@ -25,7 +25,8 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
         {
             var dbContext = new TestDbContext();
             dbContext.Orders.Truncate();
-            dbContext.Products.Truncate();
+            dbContext.Database.ClearTable("ProductProperties");
+            dbContext.Database.ClearTable("Products");
             dbContext.ProductsWithComplexKey.Truncate();
             dbContext.Database.ClearTable("TphPeople");
             dbContext.Database.ClearTable("TpcCustomer");

@@ -19,6 +19,7 @@ namespace N.EntityFramework.Extensions.Test.Data
         public DateTime? UpdatedDateTime { get; set; }
         [Timestamp]
         public byte[] RowVersion { get; set; }
+        public ProductProperty Properties { get; set; }
         public Product()
         {
 
