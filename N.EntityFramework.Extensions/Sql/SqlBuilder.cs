@@ -67,8 +67,9 @@ namespace N.EntityFramework.Extensions.Sql
         public String GetTableAlias()
         {
             var sqlFromClause = Clauses.First(o => o.Name == "FROM");
-            var startIndex = sqlFromClause.InputText.LastIndexOf(" AS ");
-            return startIndex > 0 ? sqlFromClause.InputText.Substring(startIndex + 4) : "";
+            var startIndex = sqlFromClause.InputText.IndexOf(" AS ") + 4;
+            var endIndex = sqlFromClause.InputText.IndexOf(']', startIndex) - startIndex + 1;
+            return startIndex > 4 ? sqlFromClause.InputText.Substring(startIndex, endIndex) : "";
         }
         public override string ToString()
         {

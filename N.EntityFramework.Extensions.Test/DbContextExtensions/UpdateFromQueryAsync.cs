@@ -198,5 +198,22 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Price < 10)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
+
+        [TestMethod]
+        public async Task With_OneToOneRelationship()
+        {
+            var dbContext = SetupDbContext(true);
+
+            dbContext.Products.Add(new Product { Id = "42M", Price = 42M, OutOfStock = false, Properties = new ProductProperty { Description = null } });
+            dbContext.SaveChanges();
+
+            var oldTotal = dbContext.ProductProperties.Where(p => p.Product.Price == 42M && p.Description == null).Count();
+            int rowUpdated = await dbContext.ProductProperties.Where(p => p.Product.Price == 42M).UpdateFromQueryAsync(a => new ProductProperty { Description = "42M" });
+            var newTotal = dbContext.ProductProperties.Where(p => p.Product.Price == 42M && p.Description == null).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be product properties in database that match this condition (Description == null)");
+            Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (Url == null)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
     }
 }
