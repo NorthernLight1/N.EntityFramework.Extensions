@@ -95,7 +95,10 @@ namespace N.EntityFramework.Extensions
                 return b ? "1" : "0";
             if (value is DateTime dt)
                 return "'" + dt.ToString("yyyy-MM-ddTHH:mm:ss.fff") + "'"; // Convert to ISO-8601
-            if (!value.GetType().IsClass)
+            var valueType = value.GetType();
+            if (valueType.IsEnum)
+                return Convert.ToString((int)value, CultureInfo.InvariantCulture);
+            if (!valueType.IsClass)
                 return Convert.ToString(value, CultureInfo.InvariantCulture);
 
             throw new NotImplementedException("Unhandled data type.");
