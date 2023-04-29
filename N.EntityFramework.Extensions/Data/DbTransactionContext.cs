@@ -25,9 +25,12 @@ namespace N.EntityFramework.Extensions
         public DbTransactionContext(DbContext context, ConnectionBehavior connectionBehavior = ConnectionBehavior.Default, TransactionalBehavior transactionalBehavior = TransactionalBehavior.DoNotEnsureTransaction, int? commandTimeout = null, bool openConnection = true)
         {
             this.context = context;
-            this.ownsTransaction = context.Database.CurrentTransaction == null;
-            this.transaction = context.Database.CurrentTransaction;
             this.connectionBehavior = connectionBehavior;
+            if (connectionBehavior == ConnectionBehavior.Default)
+            {
+                this.ownsTransaction = context.Database.CurrentTransaction == null;
+                this.transaction = context.Database.CurrentTransaction;
+            }
             this.defaultCommandTimeout = context.Database.CommandTimeout;
             context.Database.CommandTimeout = commandTimeout;
 
