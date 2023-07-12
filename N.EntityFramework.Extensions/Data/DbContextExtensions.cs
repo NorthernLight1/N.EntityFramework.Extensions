@@ -541,25 +541,27 @@ namespace N.EntityFramework.Extensions
             {
                 command.CommandTimeout = options.CommandTimeout.Value;
             }
-            var reader = command.ExecuteReader();
-            //Get column names
-            for (int i = 0; i < reader.FieldCount; i++)
+            using (var reader = command.ExecuteReader())
             {
-                columns.Add(reader.GetName(i));
+                //Get column names
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    columns.Add(reader.GetName(i));
+                }
+                //Read data
+                while (reader.Read())
+                {
+                    Object[] values = new Object[reader.FieldCount];
+                    reader.GetValues(values);
+                    results.Add(values);
+                }
+                return new BulkQueryResult
+                {
+                    Columns = columns,
+                    Results = results,
+                    RowsAffected = reader.RecordsAffected
+                };
             }
-            //Read data
-            while (reader.Read())
-            {
-                Object[] values = new Object[reader.FieldCount];
-                reader.GetValues(values);
-                results.Add(values);
-            }
-            return new BulkQueryResult
-            {
-                Columns = columns,
-                Results = results,
-                RowsAffected = reader.RecordsAffected
-            };
         }
         public static int DeleteFromQuery<T>(this IQueryable<T> querable)
         {
