@@ -96,6 +96,20 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
         }
         [TestMethod]
+        public void With_Guid_Value()
+        {
+            var dbContext = SetupDbContext(true);
+            var guid = Guid.NewGuid();
+            var orders = dbContext.Orders.Where(o => o.Price < 10M);
+            int oldTotal = orders.Count();
+            int rowUpdated = orders.UpdateFromQuery(o => new Order { GlobalId = guid });
+            int matchCount = dbContext.Orders.Where(o => o.GlobalId == guid).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < $10)");
+            Assert.IsTrue(rowUpdated == oldTotal, $"The number of rows update must match the count of rows that match the condition (GlobalId = '{guid}')");
+            Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
+        }
+        [TestMethod]
         public void With_Long_List()
         {
             var dbContext = SetupDbContext(true);
