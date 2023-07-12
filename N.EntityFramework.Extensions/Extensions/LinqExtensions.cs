@@ -91,6 +91,8 @@ namespace N.EntityFramework.Extensions
                 return "NULL";
             if (value is string str)
                 return "'" + str.Replace("'", "''") + "'";
+            if (value is Guid guid)
+                return $"'{guid}'";
             if (value is bool b)
                 return b ? "1" : "0";
             if (value is DateTime dt)

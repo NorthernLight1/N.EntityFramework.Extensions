@@ -2,6 +2,7 @@
 using N.EntityFramework.Extensions.Test.Data;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -94,6 +95,20 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < $10)");
             Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condtion (Price < $10)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+            Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
+        }
+        [TestMethod]
+        public async Task With_Guid_Value()
+        {
+            var dbContext = SetupDbContext(true);
+            var guid = Guid.NewGuid();
+            var orders = dbContext.Orders.Where(o => o.Price < 10M);
+            int oldTotal = await orders.CountAsync();
+            int rowUpdated = await orders.UpdateFromQueryAsync(o => new Order { GlobalId = guid });
+            int matchCount = await dbContext.Orders.Where(o => o.GlobalId == guid).CountAsync();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Price < $10)");
+            Assert.IsTrue(rowUpdated == oldTotal, $"The number of rows update must match the count of rows that match the condition (GlobalId = '{guid}')");
             Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
         }
         [TestMethod]

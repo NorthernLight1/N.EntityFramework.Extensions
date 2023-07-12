@@ -1,7 +1,6 @@
 # N.EntityFramework.Extensions
---------------------
 
-[![latest version](https://img.shields.io/nuget/v/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions)
+[![latest version](https://img.shields.io/nuget/v/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions) [![downloads](https://img.shields.io/nuget/dt/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions)
 
 **If you are using Entity Framework Core v6.0.8+, you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
 
