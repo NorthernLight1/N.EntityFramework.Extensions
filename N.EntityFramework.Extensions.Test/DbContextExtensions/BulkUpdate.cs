@@ -9,6 +9,23 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
     public class BulkUpdate : DbContextExtensionsBase
     {
         [TestMethod]
+        public void With_ComplexKey()
+        {
+            var dbContext = SetupDbContext(true);
+            var products = dbContext.ProductsWithComplexKey.Where(o => o.Price == 1.25M).ToList();
+            foreach (var product in products)
+            {
+                product.Price = 2.35M;
+            }
+            var oldTotal = dbContext.ProductsWithComplexKey.Where(o => o.Price == 2.35M).Count();
+            int rowsUpdated = dbContext.BulkUpdate(products);
+            var newTotal = dbContext.ProductsWithComplexKey.Where(o => o.Price == 2.35M).Count();
+
+            Assert.IsTrue(products.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
+            Assert.IsTrue(rowsUpdated == products.Count, "The number of rows updated must match the count of entities that were retrieved");
+            Assert.IsTrue(newTotal == rowsUpdated + oldTotal, "The count of new orders must be equal the number of rows updated in the database.");
+        }
+        [TestMethod]
         public void With_Default_Options()
         {
             var dbContext = SetupDbContext(true);
@@ -155,6 +172,24 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             }
             var oldTotal = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
             int rowsUpdated = dbContext.BulkUpdate(orders, options => { options.UpdateOnCondition = (s, t) => s.ExternalId == t.ExternalId; });
+            var newTotal = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
+
+            Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
+            Assert.IsTrue(rowsUpdated == ordersWithExternalId, "The number of rows updated must match the count of entities that were retrieved");
+            Assert.IsTrue(newTotal == rowsUpdated + oldTotal, "The count of new orders must be equal the number of rows updated in the database.");
+        }
+        [TestMethod]
+        public void With_Options_UpdateOnCondition_CompositeKey()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.Price == 1.25M).OrderBy(o => o.Id).ToList();
+            int ordersWithExternalId = orders.Where(o => o.ExternalId != null).Count();
+            foreach (var order in orders)
+            {
+                order.Price = 2.35M;
+            }
+            var oldTotal = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
+            int rowsUpdated = dbContext.BulkUpdate(orders, options => { options.UpdateOnCondition = (s, t) => s.ExternalId == t.ExternalId && s.Id == t.Id; });
             var newTotal = dbContext.Orders.Where(o => o.Price == 2.35M && o.ExternalId != null).Count();
 
             Assert.IsTrue(orders.Count > 0, "There must be orders in database that match this condition (Price = $1.25)");
