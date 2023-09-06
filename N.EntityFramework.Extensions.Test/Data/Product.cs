@@ -1,4 +1,5 @@
-﻿using System;
+﻿using N.EntityFramework.Extensions.Test.Data.Enums;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -16,6 +17,7 @@ namespace N.EntityFramework.Extensions.Test.Data
         [Column("Status")]
         [StringLength(25)]
         public string StatusString { get; set; }
+        public ProductStatus? StatusEnum { get; set; }
         public DateTime? UpdatedDateTime { get; set; }
         [Timestamp]
         public byte[] RowVersion { get; set; }
