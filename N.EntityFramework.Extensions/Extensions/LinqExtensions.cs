@@ -100,7 +100,7 @@ namespace N.EntityFramework.Extensions
             var valueType = value.GetType();
             if (valueType.IsEnum)
                 return Convert.ToString((int)value);
-            if (valueType.IsClass)
+            if (!valueType.IsClass)
                 return Convert.ToString(value, CultureInfo.InvariantCulture);
 
             throw new NotImplementedException("Unhandled data type.");
