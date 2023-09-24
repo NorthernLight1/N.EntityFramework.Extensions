@@ -30,10 +30,23 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(ordersAreMatched, "The orders from BulkFetch() should match what is retrieved from DbContext");
         }
         [TestMethod]
-        public void With_Options_IgnoreColumns()
+        public void With_IQueryable()
         {
             var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId != null);
+            var fetchedOrders = dbContext.Orders.BulkFetch(orders, options => { options.IgnoreColumns = o => new { o.ExternalId }; }).ToList();
+            int newTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
+            bool foundNullExternalId = fetchedOrders.Where(o => o.ExternalId != null).Any();
+
+            Assert.IsTrue(orders.Count() > 0, "There must be orders in the database that match condition (Price <= 10 And ExternalId != null)");
+            Assert.IsTrue(orders.Count() == fetchedOrders.Count(), "The number of orders must match the number of fetched orders");
+            Assert.IsTrue(!foundNullExternalId, "Fetched orders should not contain any items where ExternalId is null.");
+        }
+        [TestMethod]
+        public void With_Options_IgnoreColumns()
+        {
+            var dbContext = SetupDbContext(true);
+            var orders = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId != null).ToList();
             var fetchedOrders = dbContext.Orders.BulkFetch(orders, options => {  options.IgnoreColumns = o => new { o.ExternalId }; }).ToList();
             int newTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
             bool foundNullExternalId = fetchedOrders.Where(o => o.ExternalId != null).Any();

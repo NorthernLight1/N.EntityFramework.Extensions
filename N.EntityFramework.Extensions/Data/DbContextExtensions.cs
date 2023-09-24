@@ -215,41 +215,43 @@ namespace N.EntityFramework.Extensions
         }
 
         private static BulkInsertResult<T> BulkInsert<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName,
-            IEnumerable<string> inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId=false, bool includeConditionColumns=true)
+            IEnumerable<string> inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId = false, bool includeConditionColumns = true)
         {
-            var dataReader = new EntityDataReader<T>(tableMapping, entities, inputColumns, useInteralId);
-
-            var sqlBulkCopy = new SqlBulkCopy(dbConnection, bulkCopyOptions, transaction)
+            using (var dataReader = new EntityDataReader<T>(tableMapping, entities, inputColumns, useInteralId))
             {
-                DestinationTableName = tableName,
-                BatchSize = options.BatchSize
-            };
-            if (options.CommandTimeout.HasValue)
-            {
-                sqlBulkCopy.BulkCopyTimeout = options.CommandTimeout.Value;
-            }
-            foreach (var column in dataReader.TableMapping.Columns)
-            {
-                if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
-                    sqlBulkCopy.ColumnMappings.Add(column.Property.Name, column.Column.Name);
-            }
-            if (includeConditionColumns)
-            {
-                foreach (var condition in dataReader.TableMapping.Conditions)
+                var sqlBulkCopy = new SqlBulkCopy(dbConnection, bulkCopyOptions, transaction)
                 {
-                    sqlBulkCopy.ColumnMappings.Add(condition.Column.Name, condition.Column.Name);
+                    DestinationTableName = tableName,
+                    BatchSize = options.BatchSize
+                };
+                if (options.CommandTimeout.HasValue)
+                {
+                    sqlBulkCopy.BulkCopyTimeout = options.CommandTimeout.Value;
                 }
-            }
-            if (useInteralId)
-            {
-                sqlBulkCopy.ColumnMappings.Add(Constants.InternalId_ColumnName, Constants.InternalId_ColumnName);
-            }
-            sqlBulkCopy.WriteToServer(dataReader);
+                foreach (var column in dataReader.TableMapping.Columns)
+                {
+                    if (inputColumns == null || (inputColumns != null && inputColumns.Contains(column.Column.Name)))
+                        sqlBulkCopy.ColumnMappings.Add(column.Property.Name, column.Column.Name);
+                }
+                if (includeConditionColumns)
+                {
+                    foreach (var condition in dataReader.TableMapping.Conditions)
+                    {
+                        sqlBulkCopy.ColumnMappings.Add(condition.Column.Name, condition.Column.Name);
+                    }
+                }
+                if (useInteralId)
+                {
+                    sqlBulkCopy.ColumnMappings.Add(Constants.InternalId_ColumnName, Constants.InternalId_ColumnName);
+                }
+                sqlBulkCopy.WriteToServer(dataReader);
 
-            return new BulkInsertResult<T> {
-                RowsAffected = Convert.ToInt32(sqlBulkCopy.GetPrivateFieldValue("_rowsCopied")),
-                EntityMap = dataReader.EntityMap
-            };
+                return new BulkInsertResult<T>
+                {
+                    RowsAffected = Convert.ToInt32(sqlBulkCopy.GetPrivateFieldValue("_rowsCopied")),
+                    EntityMap = dataReader.EntityMap
+                };
+            }
         }
         public static BulkMergeResult<T> BulkMerge<T>(this DbContext context, IEnumerable<T> entities) where T : class
         {
