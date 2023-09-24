@@ -1,8 +1,10 @@
 ﻿using N.EntityFramework.Extensions.Util;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity.Core.Objects;
 using System.Data.SqlClient;
+using System.Data.SqlTypes;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -100,7 +102,12 @@ namespace N.EntityFramework.Extensions.Sql
             {
                 foreach (var parameter in objectQuery.Parameters)
                 {
-                    sqlParameters.Add(new SqlParameter(parameter.Name, parameter.Value));
+                    var sqlParameter = new SqlParameter(parameter.Name, parameter.Value);
+                    if (sqlParameter.SqlDbType == SqlDbType.DateTime)
+                    {
+                        sqlParameter.SqlDbType = SqlDbType.DateTime2;
+                    }
+                    sqlParameters.Add(sqlParameter);
                 }
             }
             return new SqlBuilder(sql, sqlParameters.ToArray());
