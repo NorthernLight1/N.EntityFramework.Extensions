@@ -22,7 +22,9 @@ namespace N.EntityFramework.Extensions.Test.Data
         }
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-        	//modelBuilder.Entity<TphPerson>().Property<DateTime>("CreatedDate");
+            modelBuilder.Entity<Order>()
+                       .Property(s => s.DbAddedDateTime)
+                       .HasDatabaseGeneratedOption(System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.Computed);
             modelBuilder.Entity<TpcCustomer>().Map(m =>
             {
                 m.MapInheritedProperties();
