@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.Entity.Core.Mapping;
 using System.Data.Entity.Core.Metadata.Edm;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace N.EntityFramework.Extensions
         public EntitySetMapping Mapping { get; set; }
         public EntitySet EntitySet { get; set; }
         public EntityType EntityType { get; set; }
+        public IEnumerable<EntityType> EntityTypes { get; }
         public List<ScalarPropertyMapping> Columns { get; set; }
         public List<ConditionPropertyMapping> Conditions { get; set; }
         public string Schema { get; }
@@ -26,9 +28,10 @@ namespace N.EntityFramework.Extensions
             List<ScalarPropertyMapping> columns, List<ConditionPropertyMapping> conditions)
         {
             var storeEntitySet = mapping.EntityTypeMappings.First(o => o.EntityType != null && o.EntityType.Name == entityType.Name).Fragments.Single().StoreEntitySet;
-            
+
             EntitySet = entitySet;
             EntityType = entityType;
+            EntityTypes = GetEntityTypes().Reverse();
             Mapping = mapping;
             Columns = columns;
             Conditions = conditions;
@@ -47,9 +50,45 @@ namespace N.EntityFramework.Extensions
             columns.AddRange(this.Conditions.Select(o => o.Column.Name));
             return columns;
         }
-        public IEnumerable<string> GetPrimaryKeyColumns()
+        public IEnumerable<string> GetQualifiedColumnNames(IEnumerable<string> columnNames)
         {
-            return EntitySet.ElementType.KeyMembers.Select(o => o.Name);
+            string format = "[{0}].[{1}]";
+            var columns = new List<string>();
+            columns.AddRange(this.Columns.Where(o => columnNames.Contains(o.Column.Name))
+                .Select(o => string.Format(format, FindTableName(o.Column.DeclaringType as EntityType), o.Column.Name)));
+            columns.AddRange(this.Conditions.Where(o => columnNames.Contains(o.Column.Name))
+                .Select(o => string.Format(format, FindTableName(o.Column.DeclaringType as EntityType), o.Column.Name)));
+            return columns;
+        }
+        public IEnumerable<string> GetPrimaryKeyColumns() =>
+            EntitySet.ElementType.KeyMembers.Select(o => Columns.Single(c => c.Property.Name == o.Name).Column.Name);
+        public IEnumerable<string> GetTableNames()
+        {
+            foreach(var entityType in EntityTypes)
+            {
+                var storeEntitySet = Mapping.EntityTypeMappings.First(t => (t.EntityType != null && t.EntityType.Name == entityType.Name)
+                        || t.IsOfEntityTypes.Any(o => o.Name == entityType.Name)).Fragments.Single().StoreEntitySet;
+                yield return FindTableName(storeEntitySet);
+            }
+        }
+        private string FindTableName(EntitySet storeEntitySet)
+        {
+            return (string)storeEntitySet.MetadataProperties["Table"].Value ?? storeEntitySet.Name;
+        }
+        private string FindTableName(EntityType entityType)
+        {
+            var storeEntitySet = Mapping.EntityTypeMappings.First(t => (t.EntityType != null && t.EntityType.Name == entityType.Name)
+                        || t.IsOfEntityTypes.Any(o => o.Name == entityType.Name)).Fragments.Single().StoreEntitySet;
+            return FindTableName(storeEntitySet);
+        }
+        private IEnumerable<EntityType> GetEntityTypes()
+        {
+            EntityType entityType = EntityType;
+            do
+            {
+                yield return entityType;
+                entityType = entityType.BaseType as EntityType;
+            } while (entityType != null);
         }
     }
 }

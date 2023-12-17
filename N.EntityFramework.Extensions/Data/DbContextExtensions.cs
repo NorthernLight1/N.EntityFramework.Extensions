@@ -402,7 +402,7 @@ namespace N.EntityFramework.Extensions
 
                     if (primaryKeyColumnNames.Length == 0 && options.UpdateOnCondition == null)
                         throw new InvalidDataException("BulkUpdate requires that the entity have a primary key or the Options.UpdateOnCondition must be set.");
-
+                    
                     context.Database.CloneTable(destinationTableName, stagingTableName);
                     BulkInsert(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity);
 
@@ -573,7 +573,7 @@ namespace N.EntityFramework.Extensions
         {
             int rowAffected = 0;
 
-            using (var dbTransactionContext = new DbTransactionContext(querable.GetDbContext()))
+            using (var dbTransactionContext = new DbTransactionContext(querable.GetDbContext(), commandTimeout: commandTimeout))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var dbTransaction = dbTransactionContext.CurrentTransaction;
@@ -600,7 +600,7 @@ namespace N.EntityFramework.Extensions
         {
             int rowAffected = 0;
 
-            using (var dbTransactionContext = new DbTransactionContext(querable.GetDbContext()))
+            using (var dbTransactionContext = new DbTransactionContext(querable.GetDbContext(), commandTimeout: commandTimeout))
             {
                 try
                 {
@@ -759,7 +759,7 @@ namespace N.EntityFramework.Extensions
         public static int UpdateFromQuery<T>(this IQueryable<T> querable, Expression<Func<T, T>> updateExpression, int? commandTimeout)
         {
             int rowAffected = 0;
-            using (var dbTransactionContext = new DbTransactionContext(querable.GetDbContext()))
+            using (var dbTransactionContext = new DbTransactionContext(querable.GetDbContext(), commandTimeout: commandTimeout))
             {
                 try
                 {
@@ -929,7 +929,7 @@ namespace N.EntityFramework.Extensions
             var columns = new List<ScalarPropertyMapping>();
             var conditions = new List<ConditionPropertyMapping>();
             foreach (var mapping in mappings.EntityTypeMappings
-                .Where(o => o.EntityType == null || o.EntityType.Name == entityType.Name))
+                .Where(o => (o.EntityType == null || o.EntityType.Name == entityType.Name)))
             {
                 foreach(var propertyMapping in mapping.Fragments.Single().PropertyMappings.OfType<ScalarPropertyMapping>().ToList())
                 {
