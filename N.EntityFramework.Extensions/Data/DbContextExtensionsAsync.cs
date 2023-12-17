@@ -557,7 +557,7 @@ namespace N.EntityFramework.Extensions
         {
             int rowAffected = 0;
             var dbContext = querable.GetDbContext();
-            using (var dbTransactionContext = new DbTransactionContext(dbContext))
+            using (var dbTransactionContext = new DbTransactionContext(dbContext, commandTimeout: commandTimeout))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var dbTransaction = dbTransactionContext.CurrentTransaction;
@@ -582,7 +582,7 @@ namespace N.EntityFramework.Extensions
         {
             int rowAffected = 0;
             var dbContext = querable.GetDbContext();
-            using (var dbTransactionContext = new DbTransactionContext(dbContext))
+            using (var dbTransactionContext = new DbTransactionContext(dbContext, commandTimeout: commandTimeout))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var dbTransaction = dbTransactionContext.CurrentTransaction;
@@ -617,7 +617,7 @@ namespace N.EntityFramework.Extensions
         {
             int rowAffected = 0;
             var dbContext = querable.GetDbContext();
-            using (var dbTransactionContext = new DbTransactionContext(dbContext))
+            using (var dbTransactionContext = new DbTransactionContext(dbContext, commandTimeout: commandTimeout))
             {
                 var dbConnection = dbTransactionContext.Connection;
                 var dbTransaction = dbTransactionContext.CurrentTransaction;
