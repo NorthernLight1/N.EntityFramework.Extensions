@@ -2,7 +2,7 @@
 
 [![latest version](https://img.shields.io/nuget/v/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions) [![downloads](https://img.shields.io/nuget/dt/N.EntityFramework.Extensions)](https://www.nuget.org/packages/N.EntityFramework.Extensions)
 
-**If you are using Entity Framework Core v6.0.8+, you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
+**If you are using Entity Framework Core v7.0.13+ you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
 
 ## Bulk data support for the EntityFramework 6.4.4+
 
@@ -204,4 +204,3 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | FetchAsync(fetchAction, options)  | Fetch rows asynchronously in batches from the database using a LINQ query |
 | FetchAsync(fetchAction, cancellationToken) | Fetch rows asynchronously in batches from the database using a LINQ query  | 
 | FetchAsync(fetchAction, options, cancellationToken) | Fetch rows asynchronously in batches from the database using a LINQ query  | 
-  
