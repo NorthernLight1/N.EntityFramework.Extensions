@@ -68,6 +68,34 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
         }
         [TestMethod]
+        public async Task With_DateTimeOffset_Value()
+        {
+            var dbContext = SetupDbContext(true);
+            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            int oldTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
+            int rowUpdated = await dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).UpdateFromQueryAsync(o => new Order { IndexationDateTime = now });
+            int newTotal = dbContext.Orders.Where(o => o.IndexationDateTime == now).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Orders added in last 30 days)");
+            Assert.IsTrue(rowUpdated == newTotal, "The number of rows update must match the count of rows that match the condition (Orders added in last 30 days)");
+        }
+        [TestMethod]
+        public async Task With_DateTimeOffset_No_UTC_Value()
+        {
+            var dbContext = SetupDbContext(true);
+            DateTime dateTime = dbContext.Orders.Max(o => o.AddedDateTime).AddDays(-30);
+            DateTimeOffset now = DateTimeOffset.Parse("2020-06-17T16:00:00+05:00");
+
+            int oldTotal = dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).Count();
+            int rowUpdated = await dbContext.Orders.Where(o => o.AddedDateTime >= dateTime).UpdateFromQueryAsync(o => new Order { IndexationDateTime = now });
+            int newTotal = dbContext.Orders.Where(o => o.IndexationDateTime == now).Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition (Orders added in last 30 days)");
+            Assert.IsTrue(rowUpdated == newTotal, "The number of rows update must match the count of rows that match the condition (Orders added in last 30 days)");
+        }
+        [TestMethod]
         public async Task With_Decimal_Value()
         {
             var dbContext = SetupDbContext(true);
