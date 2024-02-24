@@ -2,9 +2,9 @@
   <PropertyGroup>
     <TargetFrameworks>net46;netstandard2.1</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <Version>1.7.8</Version>
+    <Version>1.7.9</Version>
     <Company>NorthernLight1</Company>
-    <Copyright>Copyright ©  2023</Copyright>
+    <Copyright>Copyright ©  2024</Copyright>
     <Description>Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkFetch, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile.
 
 Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hierarchy, Table-Per-Concrete)</Description>

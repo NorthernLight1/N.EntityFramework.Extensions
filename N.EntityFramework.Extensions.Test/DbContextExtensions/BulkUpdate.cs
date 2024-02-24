@@ -45,17 +45,17 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newOrders == rowsUpdated, "The count of new orders must be equal the number of rows updated in the database.");
         }
         [TestMethod]
-        public void With_Default_Options_Tpc()
+        public void With_Inheritance_Tpc()
         {
             var dbContext = SetupDbContext(true, PopulateDataMode.Tpc);
-            var customers = dbContext.TpcPeople.Where(o => o.LastName != "BulkUpdateTest").OfType<TpcCustomer>().ToList();
+            var customers = dbContext.TpcPeople.Where(o => o.LastName != "BulkUpdate_Tpc").OfType<TpcCustomer>().ToList();
             var vendors = dbContext.TpcPeople.OfType<TpcVendor>().ToList();
             foreach (var customer in customers)
             {
                 customer.FirstName = string.Format("Id={0}", customer.Id);
                 customer.LastName = "BulkUpdate_Tpc";
             }
-            int rowsUpdated = dbContext.BulkUpdate(customers, options => { options.UpdateOnCondition = (s, t) => s.Id == t.Id; });
+            int rowsUpdated = dbContext.BulkUpdate(customers);
             var newCustomers = dbContext.TpcPeople.Where(o => o.LastName == "BulkUpdate_Tpc").OfType<TpcCustomer>().Count();
             int entitiesWithChanges = dbContext.ChangeTracker.Entries().Where(t => t.State == EntityState.Modified).Count();
 
@@ -65,7 +65,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newCustomers == rowsUpdated, "The count of new customers must be equal the number of rows updated in the database.");
         }
         [TestMethod]
-        public void With_Default_Options_Tph()
+        public void With_Inheritance_Tph()
         {
             var dbContext = SetupDbContext(true, PopulateDataMode.Tph);
             var customers = dbContext.TphPeople.Where(o => o.LastName != "BulkUpdateTest").OfType<TphCustomer>().ToList();

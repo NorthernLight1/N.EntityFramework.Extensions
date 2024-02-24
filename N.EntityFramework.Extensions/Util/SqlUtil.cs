@@ -50,16 +50,6 @@ namespace N.EntityFramework.Extensions
         {
             return ExecuteSql(string.Format("DELETE FROM {0}", tableName), connection, transaction, null);
         }
-        //internal static int DeleteTable(string tableName, SqlConnection connection, SqlTransaction transaction)
-        //{
-        //    return ExecuteSql(string.Format("DROP TABLE {0}", tableName), connection, transaction, null);
-        //}
-        //internal static int CloneTable(string sourceTable, string destinationTable, string[] columnNames, SqlConnection connection, SqlTransaction transaction, string internalIdColumnName=null)
-        //{
-        //    string columns = columnNames != null && columnNames.Length > 0 ? string.Join(",", columnNames) : "*";
-        //    columns = !string.IsNullOrEmpty(internalIdColumnName) ? string.Format("{0},CAST( NULL AS INT) AS {1}",columns, internalIdColumnName) : columns;
-        //    return ExecuteSql(string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable), connection, transaction, null);
-        //}
         internal static string ConvertToColumnString(IEnumerable<string> columnNames)
         {
             return string.Join(",", columnNames);

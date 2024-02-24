@@ -45,7 +45,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
         [TestMethod]
-        public async Task With_Default_Options_Tpc()
+        public async Task With_Inheritance_Tpc()
         {
             var dbContext = SetupDbContext(false);
             var customers = new List<TpcCustomer>();
@@ -82,7 +82,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
         [TestMethod]
-        public async Task With_Default_Options_Tph()
+        public async Task With_Inheritance_Tph()
         {
             var dbContext = SetupDbContext(false);
             var customers = new List<TphCustomer>();
@@ -168,6 +168,32 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 
             Assert.IsTrue(rowsAdded == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
+        }
+        [TestMethod]
+        public async Task With_Options_CommandTimeout()
+        {
+            bool threwException = false;
+            var dbContext = SetupDbContext(false);
+            var orders = new List<Order>();
+            for (int i = 0; i < 600000; i++)
+            {
+                orders.Add(new Order { Id = i, Price = 1.57M });
+            }
+            try
+            {
+                int rowsInserted = await dbContext.BulkInsertAsync(orders, new BulkInsertOptions<Order>()
+                {
+                    CommandTimeout = 1,
+                    BatchSize = 0
+                });
+            }
+            catch (Exception ex)
+            {
+                threwException = true;
+                Assert.IsInstanceOfType(ex, typeof(SqlException));
+                Assert.IsTrue(ex.Message.StartsWith("Timeout expired.  The timeout period elapsed prior to completion of the operation or the server is not responding."));
+            }
+            Assert.IsTrue(threwException, "Sql Timeout exception should have been thrown.");
         }
         [TestMethod]
         public async Task With_Options_IgnoreColumns()
