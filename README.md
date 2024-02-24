@@ -173,7 +173,7 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | BulkInsertAsync(items, options)  | Bulk insert entities asynchronously in your database.  |
 | BulkInsertAsync(items, options, cancellationToken)  | Bulk insert entities asynchronously in your database.  |
 | **BulkInsertOptions** |
-| AutoMapOutput | Assigns the ouput of all database generated columns. Perfomance can be improved by disabling this option. (Default=true) |
+| AutoMapOutput | Assigns the ouput of all database generated columns to the entities. Perfomance can be improved by disabling this option. (Default=true) |
 | CommandTimeout | Gets or sets the wait time (in seconds) before terminating the attempt. |
 | IgnoreColumns | columns that will be excluded. |
 | IncludeColumns | columns that will be include. |
