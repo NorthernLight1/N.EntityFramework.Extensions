@@ -168,6 +168,32 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(autoMapIdentityMatched, "The auto mapping of ids of entities that were merged failed to match up");
         }
         [TestMethod]
+        public void With_Options_CommandTimeout()
+        {
+            bool threwException = false;
+            var dbContext = SetupDbContext(false);
+            var orders = new List<Order>();
+            for (int i = 0; i < 600000; i++)
+            {
+                orders.Add(new Order { Id = i, Price = 1.57M });
+            }
+            try
+            {
+                int rowsInserted = dbContext.BulkInsert(orders, new BulkInsertOptions<Order>()
+                {
+                    CommandTimeout = 1,
+                    BatchSize = 0
+                });
+            }
+            catch (Exception ex)
+            {
+                threwException = true;
+                Assert.IsInstanceOfType(ex, typeof(SqlException));
+                Assert.IsTrue(ex.Message.StartsWith("Timeout expired.  The timeout period elapsed prior to completion of the operation or the server is not responding."));
+            }
+            Assert.IsTrue(threwException, "Sql Timeout exception should have been thrown.");
+        }
+        [TestMethod]
         public void With_Options_IgnoreColumns()
         {
             var dbContext = SetupDbContext(false);
