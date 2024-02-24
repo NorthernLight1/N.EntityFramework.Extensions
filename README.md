@@ -28,7 +28,15 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
   {  
       orders.Add(new Order { OrderDate = DateTime.UtcNow, TotalPrice = 2.99 });  
   }  
-  dbcontext.BulkInsert(orders);  
+  dbcontext.BulkInsert(orders);
+
+  //Using options
+  dbContext.BulkInsert(orders, new BulkInsertOptions<Order>()
+  {
+    InsertIfExists = true,
+    CommandTimeout = 30,
+    BatchSize = 100000,
+  });  
  ```
   **BulkDelete() - Performs a delete operation with a large number of entities**  
   ```
@@ -155,7 +163,15 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | BulkFetch<T>(items, options)  | Retrieve entities that are contained in the items list.  |
 | BulkFetchAsync<T>(items)  | Retrieve entities that are contained in the items list.  |
 | BulkFetchAsync<T>(items, options)  | Retrieve entities that are contained in the items list.  | 
-| **BulkInsert** |
+| **BulkInsert** 
+| *Options* |
+| AutoMapOutput | Assigns the ouput of all database generated columns. Perfomance can be improved by disabling this option. (Default=true) |
+| CommandTimeout | Gets or sets the wait time (in seconds) before terminating the attempt. |
+| IgnoreColumns | columns that will be excluded. |
+| IncludeColumns | columns that will be include. |
+| InsertIfNotExists | Inserts data into the target table only if it doesn't already exist. (Default=false) |
+| InsertOnCondition | Gets or sets the join condition for inserting data. If this condition is null, then the primary key is used. (Default=null) |
+| KeepIdentity | Keeps the identity when inserting data into a table. (Default=false)|
 | BulkInsert<T>(items)  | Bulk insert entities in your database.  |
 | BulkInsert<T>(items, options)  | Bulk insert entities in your database.   |
 | BulkInsertAsync(items)  | Bulk insert entities asynchronously in your database.  |
