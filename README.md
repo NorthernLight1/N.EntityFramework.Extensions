@@ -30,12 +30,14 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
   }  
   dbcontext.BulkInsert(orders);
 
-  //Using options
-  dbContext.BulkInsert(orders, new BulkInsertOptions<Order>()
+  //Using Options
+  dbContext.BulkInsert(orders, options =>
   {
-    InsertIfExists = true,
-    CommandTimeout = 30,
-    BatchSize = 100000,
+    options.CommandTimeout = 30;
+    options.BatchSize = 100000;
+    options.InsertIfNotExists = true;
+    options.InsertOnCondition = (s, t) => s.ExternalId == t.ExternalId;
+	options.KeepIdentity = true;
   });  
  ```
   **BulkDelete() - Performs a delete operation with a large number of entities**  
@@ -163,8 +165,14 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | BulkFetch<T>(items, options)  | Retrieve entities that are contained in the items list.  |
 | BulkFetchAsync<T>(items)  | Retrieve entities that are contained in the items list.  |
 | BulkFetchAsync<T>(items, options)  | Retrieve entities that are contained in the items list.  | 
-| **BulkInsert** 
-| *Options* |
+| **BulkInsert** |
+| BulkInsert<T>(items)  | Bulk insert entities in your database.  |
+| BulkInsert<T>(items, options)  | Bulk insert entities in your database.   |
+| BulkInsertAsync(items)  | Bulk insert entities asynchronously in your database.  |
+| BulkInsertAsync(items, cancellationToken)  | Bulk insert entities asynchronously in your database.  |
+| BulkInsertAsync(items, options)  | Bulk insert entities asynchronously in your database.  |
+| BulkInsertAsync(items, options, cancellationToken)  | Bulk insert entities asynchronously in your database.  |
+| **BulkInsertOptions** |
 | AutoMapOutput | Assigns the ouput of all database generated columns. Perfomance can be improved by disabling this option. (Default=true) |
 | CommandTimeout | Gets or sets the wait time (in seconds) before terminating the attempt. |
 | IgnoreColumns | columns that will be excluded. |
@@ -172,12 +180,7 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | InsertIfNotExists | Inserts data into the target table only if it doesn't already exist. (Default=false) |
 | InsertOnCondition | Gets or sets the join condition for inserting data. If this condition is null, then the primary key is used. (Default=null) |
 | KeepIdentity | Keeps the identity when inserting data into a table. (Default=false)|
-| BulkInsert<T>(items)  | Bulk insert entities in your database.  |
-| BulkInsert<T>(items, options)  | Bulk insert entities in your database.   |
-| BulkInsertAsync(items)  | Bulk insert entities asynchronously in your database.  |
-| BulkInsertAsync(items, cancellationToken)  | Bulk insert entities asynchronously in your database.  |
-| BulkInsertAsync(items, options)  | Bulk insert entities asynchronously in your database.  |
-| BulkInsertAsync(items, options, cancellationToken)  | Bulk insert entities asynchronously in your database.  |
+| UsePermanentTable | Uses a permanent table when inserting data. If a table uses Always Encrypt, a permanent table is required. (Default=false)|
 | **BulkMerge** |
 | BulkMerge<T>(items)  | Bulk merge entities in your database.  |
 | BulkMerge<T>(items, options)  | Bulk merge entities in your database.   |
@@ -208,13 +211,13 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | InsertFromQueryAsync(tableName, selectExpression) | Insert all rows from the database using a LINQ query without loading in context using asynchronous task |
 | InsertFromQueryAsync(tableName, selectExpression, cancellationToken) | Insert all rows from the database using a LINQ query without loading in context using asynchronous task  |
 | **UpdateFromQuery** |
-| UpdateFromQuery(updateExpression) | Updates all rows from the database using a LINQ query without loading in context |
-| UpdateFromQueryAsync(updateExpression) | Updates all rows from the database using a LINQ query without loading in context using asynchronous task |
-| UpdateFromQueryAsync(updateExpression, cancellationToken) | Updates all rows from the database using a LINQ query without loading in context using asynchronous task  |
+| UpdateFromQuery(updateExpression, commandTimeout=null) | Updates all rows from the database using a LINQ query without loading in context |
+| UpdateFromQueryAsync(updateExpression, commandTimeout=null) | Updates all rows from the database using a LINQ query without loading in context using asynchronous task |
+| UpdateFromQueryAsync(updateExpression, commandTimeout=null, cancellationToken) | Updates all rows from the database using a LINQ query without loading in context using asynchronous task  |
 | **Fetch** |
 | Fetch(fetchAction) | Fetch rows in batches from the database using a LINQ query |
 | Fetch(fetchAction, options) | Fetch rows in batches from the database using a LINQ query |
 | FetchAsync(fetchAction)  | Fetch rows asynchronously in batches from the database using a LINQ query |
 | FetchAsync(fetchAction, options)  | Fetch rows asynchronously in batches from the database using a LINQ query |
 | FetchAsync(fetchAction, cancellationToken) | Fetch rows asynchronously in batches from the database using a LINQ query  | 
-| FetchAsync(fetchAction, options, cancellationToken) | Fetch rows asynchronously in batches from the database using a LINQ query  | 
+| FetchAsync(fetchAction, options, cancellationToken) | Fetch rows asynchronously in batches from the database using a LINQ query  |
