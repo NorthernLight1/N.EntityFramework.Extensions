@@ -12,6 +12,7 @@ namespace N.EntityFramework.Extensions
         public EntitySetMapping Mapping { get; set; }
         public EntitySet EntitySet { get; set; }
         public EntityType EntityType { get; set; }
+        public Type ClrType { get; set; }
         public IEnumerable<EntityType> EntityTypes { get; }
         public List<ScalarPropertyMapping> Columns { get; set; }
         public List<ConditionPropertyMapping> Conditions { get; set; }
@@ -24,11 +25,12 @@ namespace N.EntityFramework.Extensions
 
         public bool HasIdentity => this.Columns.Any(o => o.Column.IsStoreGeneratedIdentity);
 
-        public TableMapping(EntitySet entitySet, EntityType entityType, EntitySetMapping mapping, 
+        public TableMapping(EntitySet entitySet, EntityType entityType, Type clrType, EntitySetMapping mapping, 
             List<ScalarPropertyMapping> columns, List<ConditionPropertyMapping> conditions)
         {
             var storeEntitySet = mapping.EntityTypeMappings.First(o => o.EntityType != null && o.EntityType.Name == entityType.Name).Fragments.Single().StoreEntitySet;
 
+            ClrType = clrType;
             EntitySet = entitySet;
             EntityType = entityType;
             EntityTypes = GetEntityTypes().Reverse();

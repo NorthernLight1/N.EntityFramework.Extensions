@@ -6,7 +6,7 @@
 
 ## Bulk data support for the EntityFramework 6.4.4+
 
-Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkFetch, BulkInsert, BulkMerge, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
+Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkFetch, BulkInsert, BulkMerge, BulkSaveChanges, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
 
 Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hierarchy, Table-Per-Concrete)
 
@@ -74,6 +74,17 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
   products.Add(new Product { Name="Hat", Price=10.25M });
   products.Add(new Product { Name="Shirt", Price=20.95M });
   dbcontext.BulkMerge(products);
+  ```
+  **BulkSaveChanges() - Saves all changes using bulk operations**  
+   ```
+  var dbContext = new MyDbContext();  
+  var orders = new List<Order>();  
+  for(int i=0; i<10000; i++)  
+  {  
+      orders.Add(new Order { Id=-i,OrderDate = DateTime.UtcNow, TotalPrice = 2.99 });  
+  }
+  dbContext.Orders.AddRange(orders);
+  dbContext.BulkSaveChanges();  
   ```
    **BulkSync() - Performs a sync operation with a large number of entities.** 
    
@@ -188,6 +199,11 @@ Supports: Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hie
 | BulkMergeAsync(items, cancellationToken)  | Bulk merge entities asynchronously in your database.  |
 | BulkMergeAsync(items, options)  | Bulk merge entities asynchronously in your database.  |
 | BulkMergeAsync(items, options, cancellationToken)  | Bulk merge entities asynchronously in your database.  |
+| **BulkSaveChanges** |
+| BulkSaveChanges<T>()  | Save changes using high-performance bulk operations. Should be used instead of SaveChanges(). |
+| BulkSaveChanges<T>( acceptAllChangesOnSave)  | Save changes using high-performance bulk operations. Should be used instead of SaveChanges(). |
+| BulkSaveChangesAsync<T>()  | Save changes using high-performance bulk operations. Should be used instead of SaveChanges(). |
+| BulkSaveChangesAsync<T>( acceptAllChangesOnSave, cancellationToken)  | Save changes using high-performance bulk operations. Should be used instead of SaveChanges(). |
 | **BulkSync** |
 | BulkSync<T>(items)  | Bulk sync entities in your database.  |
 | BulkSync<T>(items, options)  | Bulk sync entities in your database.   |

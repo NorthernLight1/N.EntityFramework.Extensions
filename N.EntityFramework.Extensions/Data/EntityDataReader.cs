@@ -50,6 +50,7 @@ namespace N.EntityFramework.Extensions
                     i++;
                 }
             }
+
             var type = typeof(T);
             if (type.IsValueType || type == typeof(string))
             {
@@ -68,7 +69,7 @@ namespace N.EntityFramework.Extensions
                 this.valueMode = EntityValueMode.MemberAccess;
                 foreach (var column in columnIndexes)
                 {
-                    var typeExpression = Expression.Parameter(typeof(T), "type");
+                    var typeExpression = Expression.Parameter(type, "type");
                     var propertyExpression = Expression.PropertyOrField(typeExpression, column.Key);
                     var expression = Expression.Lambda<Func<T, object>>(Expression.Convert(propertyExpression, typeof(object)), typeExpression);
                     selectors[column.Value] = expression.Compile();
@@ -231,7 +232,7 @@ namespace N.EntityFramework.Extensions
                     {
                         return ((IDictionary<string, object>)obj)[this.columnNames[i]];
                     }
-                    else
+                    else if(i < this.columnNames.Count)
                     {
                         var property = obj.GetType().GetProperty(this.columnNames[i]);
                         if (property != null)
@@ -242,6 +243,10 @@ namespace N.EntityFramework.Extensions
                         {
                             return obj;
                         }
+                    }
+                    else
+                    {
+                        return conditions[i].GetPrivateFieldValue("Value");
                     }
                 }
                 else if(this.valueMode == EntityValueMode.Array)

@@ -15,6 +15,7 @@ namespace N.EntityFramework.Extensions
         public int? CommandTimeout { get; set; }
         internal TransactionalBehavior TransactionalBehavior { get; set; }
         internal ConnectionBehavior ConnectionBehavior { get; set; }
+        internal Type ClrType { get; set; }
 
         public BulkOptions()
         {
