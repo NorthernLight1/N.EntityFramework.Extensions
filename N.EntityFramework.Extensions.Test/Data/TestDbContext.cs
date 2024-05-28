@@ -10,7 +10,9 @@ namespace N.EntityFramework.Extensions.Test.Data
         private static readonly string _connectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog = N.EntityFramework.Extensions.Test.Data.TestDbContext; Integrated Security = True; MultipleActiveResultSets=True";
         public virtual DbSet<Order> Orders { get; set;  }
         public virtual DbSet<Product> Products { get; set; }
+        public virtual DbSet<ProductCategory> ProductCategories { get; set; }
         public virtual DbSet<ProductWithComplexKey> ProductsWithComplexKey { get; set; }
+        public virtual DbSet<ProductWithCustomSchema> ProductsWithCustomSchema { get; set; }
         public virtual DbSet<TpcPerson> TpcPeople { get; set; }
         public virtual DbSet<TphPerson> TphPeople { get; set; }
         public virtual DbSet<TphCustomer> TphCustomers { get; set; }
@@ -22,6 +24,7 @@ namespace N.EntityFramework.Extensions.Test.Data
         }
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ProductWithCustomSchema>().ToTable(nameof(ProductsWithCustomSchema), "top");
             //modelBuilder.Entity<Order>()
             //           .Property(s => s.DbAddedDateTime)
             //           .HasDatabaseGeneratedOption(System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.Computed);

@@ -35,16 +35,21 @@ namespace N.EntityFramework.Extensions.Sql
             sqlText = sqlText.Replace("\r\n", " ");
             //Process Sql Text
             string curClause = string.Empty;
-            int curClauseIndex = 0;
+            int curClauseIndex = 0, wrappedCount = 0;
             for (int i = 0; i < sqlText.Length;)
             {
                 //Find new Sql clause
                 int maxLenToSearch = sqlText.Length - i >= 10 ? 10 : sqlText.Length - i;
                 string keyword = StartsWithString(sqlText.Substring(i, maxLenToSearch), keywords, StringComparison.OrdinalIgnoreCase);
                 bool isWordStart = i > 0 ? sqlText[i-1] == ' ' : true;
+
+                if (sqlText[i] == '(')
+                    wrappedCount++;
+                else if(sqlText[i] == ')')
+                    wrappedCount--;
                 
                 //Process Sql clause
-                if (keyword != null && curClause != keyword && isWordStart)
+                if (keyword != null && curClause != keyword && isWordStart && wrappedCount == 0)
                 {
                     if (!string.IsNullOrEmpty(curClause))
                     {
@@ -112,14 +117,17 @@ namespace N.EntityFramework.Extensions.Sql
             }
             return new SqlBuilder(sql, sqlParameters.ToArray());
         }
-        public void ChangeToDelete(string expression)
+        public void ChangeToDelete()
         {
             Validate();
             var sqlClause = Clauses.FirstOrDefault();
-            if(sqlClause != null)
+            var sqlFromClause = Clauses.First(o => o.Name == "FROM");
+            if (sqlClause != null)
             {
                 sqlClause.Name = "DELETE";
-                sqlClause.InputText = expression;
+                int aliasStartIndex = sqlFromClause.InputText.IndexOf("AS ") + 3;
+                int aliasLength = sqlFromClause.InputText.IndexOf("]", aliasStartIndex) - aliasStartIndex + 1;
+                sqlClause.InputText = sqlFromClause.InputText.Substring(aliasStartIndex, aliasLength);
             }
         }
         public void ChangeToUpdate<T>(string tableName, Expression<Func<T,T>> updateExpression)

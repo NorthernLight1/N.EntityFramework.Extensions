@@ -601,7 +601,7 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
-                    sqlQuery.ChangeToDelete(sqlQuery.GetTableAlias());
+                    sqlQuery.ChangeToDelete();
                     rowAffected = await dbContext.Database.ExecuteSqlCommandAsync(sqlQuery.Sql, cancellationToken, sqlQuery.Parameters);
 
                     dbTransactionContext.Commit();
@@ -626,6 +626,7 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
+                    tableName = CommonUtil.FormatTableName(tableName);
                     if (SqlUtil.TableExists(tableName, dbConnection, dbTransaction))
                     {
                         sqlQuery.ChangeToInsert(tableName, insertObjectExpression);

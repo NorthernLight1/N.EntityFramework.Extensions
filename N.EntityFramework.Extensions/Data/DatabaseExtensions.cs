@@ -30,6 +30,7 @@ namespace N.EntityFramework.Extensions
         }
         public static int DropTable(this Database database, string tableName, bool ifExists = false)
         {
+            tableName = CommonUtil.FormatTableName(tableName);
             bool deleteTable = !ifExists || (ifExists && database.TableExists(tableName)) ? true : false;
             return deleteTable ? database.ExecuteSqlCommand(TransactionalBehavior.DoNotEnsureTransaction, string.Format("DROP TABLE {0}", tableName)) : -1;
         }
