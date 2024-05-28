@@ -125,7 +125,9 @@ namespace N.EntityFramework.Extensions.Sql
             if (sqlClause != null)
             {
                 sqlClause.Name = "DELETE";
-                int aliasStartIndex = sqlFromClause.InputText.LastIndexOf("AS ") + 3;
+                int searchStartIndex = sqlFromClause.InputText.LastIndexOf(")");
+                searchStartIndex = searchStartIndex == -1 ? 0 : searchStartIndex;
+                int aliasStartIndex = sqlFromClause.InputText.IndexOf("AS ", searchStartIndex) + 3;
                 int aliasLength = sqlFromClause.InputText.IndexOf("]", aliasStartIndex) - aliasStartIndex + 1;
                 sqlClause.InputText = sqlFromClause.InputText.Substring(aliasStartIndex, aliasLength);
             }
