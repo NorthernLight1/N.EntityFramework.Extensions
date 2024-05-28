@@ -855,16 +855,14 @@ namespace N.EntityFramework.Extensions
             DbContext dbContext;
             try
             {
-                if (querable is DbQuery<T>)
+                if (querable is DbQuery<T> dbQuery)
                 {
-                    var dbQuery = querable as DbQuery<T>;
                     var internalQuery = querable.GetPrivateFieldValue("InternalQuery");
                     var internalContext = internalQuery.GetPrivateFieldValue("InternalContext");
                     dbContext = internalContext.GetPrivateFieldValue("Owner") as DbContext;
                 }
-                else if(querable is ObjectQuery<T>)
+                else if(querable is ObjectQuery<T> objecQuery)
                 {
-                    var objectQuery = querable as ObjectQuery<T>;
                     var context = querable.GetPrivateFieldValue("Context") as ObjectContext;
                     dbContext = new DbContext(context, true);
                 }
@@ -889,29 +887,26 @@ namespace N.EntityFramework.Extensions
         }
         internal static ObjectQuery<T> GetObjectQuery<T>(this IQueryable<T> querable)
         {
-            ObjectQuery<T> objectQuery;
             try
             {
-                if (querable is DbQuery<T>)
+                if (querable is DbQuery<T> dbQuery)
                 {
-                    var dbQuery = querable as DbQuery<T>;
                     var internalQuery = dbQuery.GetPrivateFieldValue("_internalQuery");
-                    objectQuery = internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
+                    return internalQuery.GetPrivateFieldValue("ObjectQuery") as ObjectQuery<T>;
                 }
                 else if(querable is ObjectQuery<T>)
                 {
-                    objectQuery = querable as ObjectQuery<T>;
+                    return querable as ObjectQuery<T>;
                 }
                 else
                 {
-                    throw new NotSupportedException();
+                    throw new NotSupportedException("This extension method requires a DbQuery<T> or ObjectQuery<T> instance");
                 }
             }
             catch
             {
-                throw new NotSupportedException("This extension method requires a DbQuery<T> or ObjectQuery<T> instance");
+                throw;
             }
-            return objectQuery;
         }
         internal static string GetSql<T>(this IQueryable<T> querable)
         {
