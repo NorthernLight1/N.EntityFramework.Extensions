@@ -36,13 +36,6 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows update must match the count of rows that match the condition (ProductCategory.Active == false)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
         }
-        //[TestMethod]
-        //public void With_Contains_Big_List()
-        //{
-        //    var dbContext = SetupDbContext(true);
-        //    var ids = new long[10000];
-        //    int rowUpdated = dbContext.Orders.Where(a => ids.Contains(a.Id)).DeleteFromQuery();
-        //}
         [TestMethod]
         public void With_Contains_Empty_List()
         {
@@ -56,6 +49,19 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(oldTotal == 0, "There must be no orders in database that match this condition");
             Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
+        public void With_Contains_Large_List()
+        {
+            var dbContext = SetupDbContext(true);
+            var ids = new long[10000];
+            for (int i = 0; i < ids.Length; i++)
+            {
+                ids[i] = i + 1;
+            }
+            int rowsDeleted = dbContext.Orders.Where(a => ids.Contains(a.Id)).DeleteFromQuery();
+
+            Assert.IsTrue(rowsDeleted == ids.Length, "There number of rows deleted should match the length of the Ids array");
         }
         [TestMethod]
         public void With_Contains_Integer_List()

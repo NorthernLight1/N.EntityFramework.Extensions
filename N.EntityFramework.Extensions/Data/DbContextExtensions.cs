@@ -273,7 +273,7 @@ namespace N.EntityFramework.Extensions
         {
             int rowsAffected = 0;
             var entries = dbContext.GetEntriesToSave();
-
+            
             foreach (var saveEntryGroup in entries.GroupBy(o => new { EntityType=o.Entity.GetType(), o.State }))
             {
                 var key = saveEntryGroup.Key;
@@ -918,21 +918,18 @@ namespace N.EntityFramework.Extensions
             String sql;
             try
             {
-                if (querable is DbQuery<T>)
+                if (querable is DbQuery<T> dbQuery)
                 {
-                    var dbQuery = querable as DbQuery<T>;
                     sql = dbQuery.Sql;
                 }
-                else if(querable is ObjectQuery<T>)
+                else if(querable is ObjectQuery<T> objectQuery)
                 {
-                    var dbQuery = querable as ObjectQuery<T>;
-                    sql = dbQuery.ToTraceString();
+                    sql = objectQuery.ToTraceString();
                 }
                 else
                 {
                     throw new NotSupportedException();
                 }
-             
             }
             catch
             {
@@ -946,7 +943,7 @@ namespace N.EntityFramework.Extensions
         }
         internal static TableMapping GetTableMapping<T>(this IObjectContextAdapter context, Type clrType = null) where T : class
         {
-            clrType = clrType ?? typeof(T);
+            clrType = ObjectContext.GetObjectType(clrType ?? typeof(T));
             var metadata = context.ObjectContext.MetadataWorkspace;
 
             // Get the part of the model that contains info about the actual CLR types

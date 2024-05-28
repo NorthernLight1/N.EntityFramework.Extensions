@@ -51,6 +51,19 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
         }
         [TestMethod]
+        public async Task With_Contains_Large_List()
+        {
+            var dbContext = SetupDbContext(true);
+            var ids = new long[10000];
+            for (int i = 0; i < ids.Length; i++)
+            {
+                ids[i] = i + 1;
+            }
+            int rowsDeleted = await dbContext.Orders.Where(a => ids.Contains(a.Id)).DeleteFromQueryAsync();
+
+            Assert.IsTrue(rowsDeleted == ids.Length, "There number of rows deleted should match the length of the Ids array");
+        }
+        [TestMethod]
         public async Task With_Contains_Integer_List()
         {
             var dbContext = SetupDbContext(true);

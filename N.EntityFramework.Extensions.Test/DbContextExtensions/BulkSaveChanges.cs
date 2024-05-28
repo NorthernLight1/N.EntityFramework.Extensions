@@ -184,5 +184,27 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(rowsAdded == expectedRowsAdded, "The number of rows added not not match what was expected.");
             Assert.IsTrue(rowsAffected == expectedRowsAffected, "The new count minus the old count should match the number of rows inserted.");
         }
+        [TestMethod]
+        public void With_Proxy_Type()
+        {
+            var dbContext = SetupDbContext(false);
+            int oldTotalCount = dbContext.Products.Where(o => o.Price == 10.57M).Count();
+
+            var productsToAdd = new List<Product>();
+            for (int i = 0; i < 2000; i++)
+            {
+                var product = dbContext.Products.Create();
+                product.Id = (-i).ToString();
+                product.Price = 10.57M;
+                productsToAdd.Add(product);
+            }
+
+            dbContext.Products.AddRange(productsToAdd);
+            int rowsAffected = dbContext.BulkSaveChanges();
+            int newTotalCount = dbContext.Products.Where(o => o.Price == 10.57M).Count();
+
+            Assert.IsTrue(rowsAffected == productsToAdd.Count, "The number of rows affected must equal the sum of entities added, deleted and updated");
+            Assert.IsTrue(oldTotalCount + productsToAdd.Count == newTotalCount, "The number of orders to add did not match what was expected.");
+        }
     }
 }
