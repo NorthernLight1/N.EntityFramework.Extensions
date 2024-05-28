@@ -918,21 +918,18 @@ namespace N.EntityFramework.Extensions
             String sql;
             try
             {
-                if (querable is DbQuery<T>)
+                if (querable is DbQuery<T> dbQuery)
                 {
-                    var dbQuery = querable as DbQuery<T>;
                     sql = dbQuery.Sql;
                 }
-                else if(querable is ObjectQuery<T>)
+                else if(querable is ObjectQuery<T> objectQuery)
                 {
-                    var dbQuery = querable as ObjectQuery<T>;
-                    sql = dbQuery.ToTraceString();
+                    sql = objectQuery.ToTraceString();
                 }
                 else
                 {
                     throw new NotSupportedException();
                 }
-             
             }
             catch
             {
