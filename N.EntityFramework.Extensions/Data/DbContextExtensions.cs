@@ -273,7 +273,7 @@ namespace N.EntityFramework.Extensions
         {
             int rowsAffected = 0;
             var entries = dbContext.GetEntriesToSave();
-
+            
             foreach (var saveEntryGroup in entries.GroupBy(o => new { EntityType=o.Entity.GetType(), o.State }))
             {
                 var key = saveEntryGroup.Key;
@@ -946,7 +946,7 @@ namespace N.EntityFramework.Extensions
         }
         internal static TableMapping GetTableMapping<T>(this IObjectContextAdapter context, Type clrType = null) where T : class
         {
-            clrType = clrType ?? typeof(T);
+            clrType = ObjectContext.GetObjectType(clrType ?? typeof(T));
             var metadata = context.ObjectContext.MetadataWorkspace;
 
             // Get the part of the model that contains info about the actual CLR types
