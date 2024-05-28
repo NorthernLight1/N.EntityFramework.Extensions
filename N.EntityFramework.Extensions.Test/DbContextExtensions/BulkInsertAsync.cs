@@ -175,7 +175,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             bool threwException = false;
             var dbContext = SetupDbContext(false);
             var orders = new List<Order>();
-            for (int i = 0; i < 600000; i++)
+            for (int i = 0; i < 700000; i++)
             {
                 orders.Add(new Order { Id = i, Price = 1.57M });
             }
@@ -266,6 +266,28 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(oldTotal == 0, "There should not be any records in the table");
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(allIdentityFieldsMatch, "The identities between the source and the database should match.");
+        }
+        [TestMethod]
+        public async Task With_Schema()
+        {
+            var dbContext = SetupDbContext(false);
+            var products = new List<ProductWithCustomSchema>();
+            for (int i = 1; i < 10000; i++)
+            {
+                var key = i.ToString();
+                products.Add(new ProductWithCustomSchema
+                {
+                    Id = key,
+                    Name = $"Product-{key}",
+                    Price = 1.57M
+                });
+            }
+            int oldTotal = dbContext.ProductsWithCustomSchema.Where(o => o.Price <= 10).Count();
+            int rowsInserted = await dbContext.BulkInsertAsync(products);
+            int newTotal = dbContext.ProductsWithCustomSchema.Where(o => o.Price <= 10).Count();
+
+            Assert.IsTrue(rowsInserted == products.Count, "The number of rows inserted must match the count of order list");
+            Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
         }
         [TestMethod]
         public async Task With_Transaction()

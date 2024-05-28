@@ -601,9 +601,12 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
-                    sqlQuery.ChangeToDelete(sqlQuery.GetTableAlias());
-                    rowAffected = await dbContext.Database.ExecuteSqlCommandAsync(sqlQuery.Sql, cancellationToken, sqlQuery.Parameters);
-
+                    //Ignore empty list
+                    if (!sqlQuery.Clauses.Any(o => o.Name == "FROM" && o.InputText.EndsWith("[SingleRowTable1]")))
+                    {
+                        sqlQuery.ChangeToDelete();
+                        rowAffected = await dbContext.Database.ExecuteSqlCommandAsync(sqlQuery.Sql, cancellationToken, sqlQuery.Parameters);
+                    }
                     dbTransactionContext.Commit();
                 }
                 catch (Exception ex)
@@ -626,6 +629,7 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
+                    tableName = CommonUtil.FormatTableName(tableName);
                     if (SqlUtil.TableExists(tableName, dbConnection, dbTransaction))
                     {
                         sqlQuery.ChangeToInsert(tableName, insertObjectExpression);

@@ -1,6 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using N.EntityFramework.Extensions.Test.Data;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -19,6 +22,54 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(oldTotal > 0, "There must be products in database that match this condition (OutOfStock == true)");
             Assert.IsTrue(rowUpdated == oldTotal, "The number of rows update must match the count of rows that match the condition (OutOfStock == false)");
             Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were updated");
+        }
+        [TestMethod]
+        public void With_Child_Relationship()
+        {
+            var dbContext = SetupDbContext(true);
+            var products = dbContext.Products.Where(p => !p.ProductCategory.Active);
+            int oldTotal = products.Count();
+            int rowsDeleted = products.DeleteFromQuery();
+            int newTotal = products.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be products in database that match this condition (ProductCategory.Active == false)");
+            Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows update must match the count of rows that match the condition (ProductCategory.Active == false)");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
+        }
+        //[TestMethod]
+        //public void With_Contains_Big_List()
+        //{
+        //    var dbContext = SetupDbContext(true);
+        //    var ids = new long[10000];
+        //    int rowUpdated = dbContext.Orders.Where(a => ids.Contains(a.Id)).DeleteFromQuery();
+        //}
+        [TestMethod]
+        public void With_Contains_Empty_List()
+        {
+            var dbContext = SetupDbContext(false);
+            var emptyList = new List<long>();
+            var orders = dbContext.Orders.Where(o => emptyList.Contains(o.Id));
+            int oldTotal = orders.Count();
+            int rowsDeleted = orders.DeleteFromQuery();
+            int newTotal = orders.Count();
+
+            Assert.IsTrue(oldTotal == 0, "There must be no orders in database that match this condition");
+            Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
+        }
+        [TestMethod]
+        public void With_Contains_Integer_List()
+        {
+            var dbContext = SetupDbContext(true);
+            var emptyList = new List<long>() { 1, 2, 3, 4, 5 };
+            var orders = dbContext.Orders.Where(o => emptyList.Contains(o.Id));
+            int oldTotal = orders.Count();
+            int rowsDeleted = orders.DeleteFromQuery();
+            int newTotal = orders.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be orders in database to delete");
+            Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
         }
         [TestMethod]
         public void With_Decimal_Using_IQuerable()
@@ -87,6 +138,18 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(oldTotal > 0, "There must be orders in database that match this condition");
             Assert.IsTrue(rowsDeleted == rowsToDelete, "The number of rows deleted must match the count of the rows that matched in the database");
             Assert.IsTrue(oldTotal - newTotal == rowsDeleted, "The rows deleted must match the new count minues the old count");
+        }
+        [TestMethod]
+        public void With_Schema()
+        {
+            var dbContext = SetupDbContext(true, PopulateDataMode.Schema);
+            int oldTotal = dbContext.ProductsWithCustomSchema.Count();
+            int rowsDeleted = dbContext.ProductsWithCustomSchema.DeleteFromQuery();
+            int newTotal = dbContext.ProductsWithCustomSchema.Count();
+
+            Assert.IsTrue(oldTotal > 0, "There must be products in database that match this condition");
+            Assert.IsTrue(rowsDeleted == oldTotal, "The number of rows deleted must match the count of existing rows in database");
+            Assert.IsTrue(newTotal == 0, "The new count must be 0 to indicate all records were deleted");
         }
         [TestMethod]
         public void With_Transaction()

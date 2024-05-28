@@ -617,8 +617,12 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
-                    sqlQuery.ChangeToDelete("[Extent1]");
-                    rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, sqlQuery.Parameters, commandTimeout);
+                    //Ignore empty list
+                    if (!sqlQuery.Clauses.Any(o => o.Name == "FROM" && o.InputText.EndsWith("[SingleRowTable1]")))
+                    {
+                        sqlQuery.ChangeToDelete();
+                        rowAffected = SqlUtil.ExecuteSql(sqlQuery.Sql, dbConnection, dbTransaction, sqlQuery.Parameters, commandTimeout);
+                    }
                     dbTransactionContext.Commit();
                 }
                 catch (Exception)
@@ -644,6 +648,7 @@ namespace N.EntityFramework.Extensions
                     var dbConnection = dbTransactionContext.Connection;
                     var dbTransaction = dbTransactionContext.CurrentTransaction;
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
+                    tableName = CommonUtil.FormatTableName(tableName);
                     if (SqlUtil.TableExists(tableName, dbConnection, dbTransaction))
                     {
                         sqlQuery.ChangeToInsert(tableName, insertObjectExpression);
@@ -824,7 +829,7 @@ namespace N.EntityFramework.Extensions
                 {
                     CommandType = EfExtensionsCommandType.ChangeTableName,
                     OldValue = tableMapping.FullQualifedTableName,
-                    NewValue = string.Format("[{0}].[{1}]", tableMapping.Schema, tableName),
+                    NewValue = CommonUtil.FormatTableName(tableName),
                     Connection = dbContext.GetSqlConnection()
                 });
             return querable;

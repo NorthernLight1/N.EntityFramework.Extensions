@@ -10,7 +10,8 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
     {
         Normal,
         Tpc,
-        Tph
+        Tph,
+        Schema
     }
     [TestClass]
     public class DbContextExtensionsBase
@@ -26,12 +27,15 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             var dbContext = new TestDbContext();
             dbContext.Orders.Truncate();
             dbContext.Products.Truncate();
+            dbContext.ProductCategories.Clear();
+            dbContext.ProductsWithCustomSchema.Truncate();
             dbContext.ProductsWithComplexKey.Truncate();
             dbContext.Database.ClearTable("TphPeople");
             dbContext.Database.ClearTable("TpcCustomer");
             dbContext.Database.ClearTable("TpcVendor");
             dbContext.Database.DropTable("OrdersUnderTen", true);
             dbContext.Database.DropTable("OrdersLast30Days", true);
+            dbContext.Database.DropTable("top.ProductsUnderTen", true);
             if (populateData)
             {
                 if (mode == PopulateDataMode.Normal)
@@ -74,11 +78,20 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 
                     Debug.WriteLine("Last Id for Order is {0}", id);
                     dbContext.BulkInsert(orders, new BulkInsertOptions<Order>() { KeepIdentity = true });
+
+                    var productCategories = new List<ProductCategory>()
+                    {
+                        new ProductCategory { Id=1, Name="Category-1", Active=true},
+                        new ProductCategory { Id=2, Name="Category-2", Active=true},
+                        new ProductCategory { Id=3, Name="Category-3", Active=true},
+                        new ProductCategory { Id=4, Name="Category-4", Active=false},
+                    };
+                    dbContext.BulkInsert(productCategories, o => { o.KeepIdentity = true; o.UsePermanentTable = true; });
                     var products = new List<Product>();
                     id = 1;
                     for (int i = 0; i < 2050; i++)
                     {
-                        products.Add(new Product { Id = i.ToString(), Price = 1.25M, OutOfStock = false });
+                        products.Add(new Product { Id = i.ToString(), Price = 1.25M, OutOfStock = false, ProductCategoryId = 4 });
                         id++;
                     }
                     for (int i = 2050; i < 7000; i++)
@@ -166,6 +179,25 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
                     }
                     dbContext.BulkInsert(tpcCustomers, new BulkInsertOptions<TpcCustomer>() { KeepIdentity = true });
                     dbContext.BulkInsert(tpcVendors, new BulkInsertOptions<TpcVendor>() { KeepIdentity = true });
+                }
+                else if (mode == PopulateDataMode.Schema)
+                {
+                    //ProductWithCustomSchema
+                    var productsWithCustomSchema = new List<ProductWithCustomSchema>();
+                    int id = 1;
+
+                    for (int i = 0; i < 2050; i++)
+                    {
+                        productsWithCustomSchema.Add(new ProductWithCustomSchema { Id = id.ToString(), Price = 1.25M });
+                        id++;
+                    }
+                    for (int i = 2050; i < 5000; i++)
+                    {
+                        productsWithCustomSchema.Add(new ProductWithCustomSchema { Id = id.ToString(), Price = 6.75M });
+                        id++;
+                    }
+
+                    dbContext.BulkInsert(productsWithCustomSchema);
                 }
             }
             return dbContext;
