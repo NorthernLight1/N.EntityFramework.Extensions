@@ -601,9 +601,12 @@ namespace N.EntityFramework.Extensions
                 try
                 {
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
-                    sqlQuery.ChangeToDelete();
-                    rowAffected = await dbContext.Database.ExecuteSqlCommandAsync(sqlQuery.Sql, cancellationToken, sqlQuery.Parameters);
-
+                    //Ignore empty list
+                    if (!sqlQuery.Clauses.Any(o => o.Name == "FROM" && o.InputText.EndsWith("[SingleRowTable1]")))
+                    {
+                        sqlQuery.ChangeToDelete();
+                        rowAffected = await dbContext.Database.ExecuteSqlCommandAsync(sqlQuery.Sql, cancellationToken, sqlQuery.Parameters);
+                    }
                     dbTransactionContext.Commit();
                 }
                 catch (Exception ex)
