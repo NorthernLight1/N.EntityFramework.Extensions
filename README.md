@@ -10,6 +10,8 @@ Entity Framework Extensions extends your DbContext with high-performance bulk op
 
 Supports: Multiple Schemas, Transaction, Asynchronous Execution, Inheritance Models (Table-Per-Hierarchy, Table-Per-Concrete)
 
+Supports Databases: SQL Server
+
   ### Installation
 
   The latest stable version is available on [NuGet](https://www.nuget.org/packages/N.EntityFramework.Extensions).
