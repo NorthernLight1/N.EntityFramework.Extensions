@@ -333,6 +333,19 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(rollbackTotal == oldTotal, "The number of rows after the transacation has been rollbacked should match the original count");
         }
         [TestMethod]
+        public void With_Trigger()
+        {
+            var dbContext = SetupDbContext(false);
+            var products = new List<ProductWithTrigger>();
+            for (int i = 1; i < 1000; i++)
+            {
+                products.Add(new ProductWithTrigger { Id = i.ToString(), Price = 1.57M });
+            }
+            int rowsInserted = dbContext.BulkInsert(products, options => { options.AutoMapOutput = false; });
+
+            Assert.IsTrue(rowsInserted == products.Count, "The number of rows inserted must match the count of products");
+        }
+        [TestMethod]
         public void With_Options_InsertIfNotExists()
         {
             var dbContext = SetupDbContext(true);

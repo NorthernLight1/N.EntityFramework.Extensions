@@ -12,6 +12,7 @@ namespace N.EntityFramework.Extensions.Test.Data
         public virtual DbSet<Product> Products { get; set; }
         public virtual DbSet<ProductCategory> ProductCategories { get; set; }
         public virtual DbSet<ProductWithComplexKey> ProductsWithComplexKey { get; set; }
+        public virtual DbSet<ProductWithTrigger> ProductsWithTrigger { get; set; }
         public virtual DbSet<ProductWithCustomSchema> ProductsWithCustomSchema { get; set; }
         public virtual DbSet<TpcPerson> TpcPeople { get; set; }
         public virtual DbSet<TphPerson> TphPeople { get; set; }
