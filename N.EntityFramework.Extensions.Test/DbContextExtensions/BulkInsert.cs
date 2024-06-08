@@ -174,7 +174,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             bool threwException = false;
             var dbContext = SetupDbContext(false);
             var orders = new List<Order>();
-            for (int i = 0; i < 800000; i++)
+            for (int i = 0; i < 1000000; i++)
             {
                 orders.Add(new Order { Id = i, Price = 1.57M });
             }
