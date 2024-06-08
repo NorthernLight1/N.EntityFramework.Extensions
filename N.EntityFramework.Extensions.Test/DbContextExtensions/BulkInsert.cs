@@ -1,10 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using N.EntityFramework.Extensions.Test.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using N.EntityFramework.Extensions.Test.Data;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -204,7 +204,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
                 orders.Add(new Order { Id = i, ExternalId = i.ToString(), Price = 1.57M, Active = true });
             }
             int oldTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
-            int rowsInserted = dbContext.BulkInsert(orders, options => { options.UsePermanentTable = true; options.IgnoreColumns = o => new { o.ExternalId };});
+            int rowsInserted = dbContext.BulkInsert(orders, options => { options.UsePermanentTable = true; options.IgnoreColumns = o => new { o.ExternalId }; });
             int newTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
 
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
@@ -331,6 +331,19 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
             Assert.IsTrue(rollbackTotal == oldTotal, "The number of rows after the transacation has been rollbacked should match the original count");
+        }
+        [TestMethod]
+        public void With_Trigger()
+        {
+            var dbContext = SetupDbContext(false);
+            var products = new List<ProductWithTrigger>();
+            for (int i = 1; i < 1000; i++)
+            {
+                products.Add(new ProductWithTrigger { Id = i.ToString(), Price = 1.57M });
+            }
+            int rowsInserted = dbContext.BulkInsert(products, options => { options.AutoMapOutput = false; });
+
+            Assert.IsTrue(rowsInserted == products.Count, "The number of rows inserted must match the count of products");
         }
         [TestMethod]
         public void With_Options_InsertIfNotExists()

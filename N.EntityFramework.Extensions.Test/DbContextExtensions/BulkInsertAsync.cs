@@ -1,10 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using N.EntityFramework.Extensions.Test.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using N.EntityFramework.Extensions.Test.Data;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -332,6 +332,19 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(rowsInserted == orders.Count, "The number of rows inserted must match the count of order list");
             Assert.IsTrue(newTotal - oldTotal == rowsInserted, "The new count minus the old count should match the number of rows inserted.");
             Assert.IsTrue(rollbackTotal == oldTotal, "The number of rows after the transacation has been rollbacked should match the original count");
+        }
+        [TestMethod]
+        public async Task With_Trigger()
+        {
+            var dbContext = SetupDbContext(false);
+            var products = new List<ProductWithTrigger>();
+            for (int i = 1; i < 1000; i++)
+            {
+                products.Add(new ProductWithTrigger { Id = i.ToString(), Price = 1.57M });
+            }
+            int rowsInserted = await dbContext.BulkInsertAsync(products, options => { options.AutoMapOutput = false; });
+
+            Assert.IsTrue(rowsInserted == products.Count, "The number of rows inserted must match the count of products");
         }
         [TestMethod]
         public async Task With_Options_InsertIfNotExists()

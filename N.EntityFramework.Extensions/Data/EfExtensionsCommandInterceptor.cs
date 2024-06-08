@@ -29,9 +29,9 @@ namespace N.EntityFramework.Extensions
 
         public void ReaderExecuting(DbCommand command, DbCommandInterceptionContext<DbDataReader> interceptionContext)
         {
-            foreach(var extensionCommand in extensionCommands)
+            foreach (var extensionCommand in extensionCommands)
             {
-                if(extensionCommand.Value.Connection == command.Connection)
+                if (extensionCommand.Value.Connection == command.Connection)
                 {
                     extensionCommand.Value.Execute(command, interceptionContext);
                     extensionCommands.TryRemove(extensionCommand.Key, out _);

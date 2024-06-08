@@ -18,7 +18,7 @@ namespace N.EntityFramework.Extensions
 
         internal bool Execute(DbCommand command, DbCommandInterceptionContext<DbDataReader> interceptionContext)
         {
-            if(CommandType == EfExtensionsCommandType.ChangeTableName)
+            if (CommandType == EfExtensionsCommandType.ChangeTableName)
             {
                 command.CommandText = command.CommandText.Replace(OldValue, NewValue);
             }

@@ -40,12 +40,12 @@ namespace N.EntityFramework.Extensions
             {
                 var methodCallExpression = expression as MethodCallExpression;
                 List<string> argValues = new List<string>();
-                foreach(var argument in methodCallExpression.Arguments)
+                foreach (var argument in methodCallExpression.Arguments)
                 {
                     argValues.Add(GetExpressionValueAsString(argument));
                 }
                 string methodFormat;
-                switch(methodCallExpression.Method.Name)
+                switch (methodCallExpression.Method.Name)
                 {
                     case "ToString":
                         methodFormat = string.Format("CONVERT(VARCHAR,{0})", argValues[0]);
@@ -109,19 +109,19 @@ namespace N.EntityFramework.Extensions
         }
         public static List<string> GetObjectProperties<T>(this Expression<Func<T, object>> expression)
         {
-            if(expression == null)
+            if (expression == null)
             {
                 return new List<string>();
             }
             else if (expression.Body is MemberExpression propertyExpression)
             {
                 return new List<string>() { propertyExpression.Member.Name };
-            } 
+            }
             else if (expression.Body is NewExpression newExpression)
             {
                 return newExpression.Members.Select(o => o.Name).ToList();
             }
-            else if((expression.Body is UnaryExpression unaryExpression) && (unaryExpression.Operand.GetPrivateFieldValue("Member") is PropertyInfo propertyInfo))
+            else if ((expression.Body is UnaryExpression unaryExpression) && (unaryExpression.Operand.GetPrivateFieldValue("Member") is PropertyInfo propertyInfo))
             {
                 return new List<string>() { propertyInfo.Name };
             }

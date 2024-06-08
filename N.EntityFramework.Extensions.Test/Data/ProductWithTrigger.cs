@@ -7,7 +7,7 @@ using N.EntityFramework.Extensions.Test.Data.Enums;
 
 namespace N.EntityFramework.Extensions.Test.Data
 {
-    public class Product
+    public class ProductWithTrigger
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
@@ -24,7 +24,7 @@ namespace N.EntityFramework.Extensions.Test.Data
         public byte[] RowVersion { get; set; }
 
         public virtual ProductCategory ProductCategory { get; set; }
-        public Product()
+        public ProductWithTrigger()
         {
 
         }

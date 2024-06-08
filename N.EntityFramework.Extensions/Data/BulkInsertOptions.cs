@@ -12,7 +12,7 @@ namespace N.EntityFramework.Extensions
         public bool KeepIdentity { get; set; }
         public bool InsertIfNotExists { get; set; }
         public Expression<Func<T, T, bool>> InsertOnCondition { get; set; }
-        
+
 
         public string[] GetInputColumns()
         {

@@ -1,12 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using N.EntityFramework.Extensions.Test.Data;
-using N.EntityFramework.Extensions.Test.Data.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using N.EntityFramework.Extensions.Test.Data;
+using N.EntityFramework.Extensions.Test.Data.Enums;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {

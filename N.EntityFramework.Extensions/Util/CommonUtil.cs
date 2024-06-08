@@ -72,16 +72,16 @@ namespace N.EntityFramework.Extensions.Util
                 int endIndex = sqlText.IndexOf(" ", startIndex);
                 string column = endIndex == -1 ? sqlText.Substring(startIndex) : sqlText.Substring(startIndex, endIndex - startIndex);
                 string[] columnParts = column.Split('.');
-                if(tableNames == null || tableNames.Contains(columnParts[0].Remove(0,1)))
+                if (tableNames == null || tableNames.Contains(columnParts[0].Remove(0, 1)))
                 {
                     foundColumns.Add(columnParts[1]);
                 }
-                startIndex = sqlText.IndexOf("$", startIndex+1);
+                startIndex = sqlText.IndexOf("$", startIndex + 1);
             }
 
             return foundColumns.ToArray();
         }
-        internal static string GetJoinConditionSql(Expression<Func<T, T, bool>> joinKeyExpression, string[] storeGeneratedColumnNames, string sourceTableName="s", string targetTableName="t")
+        internal static string GetJoinConditionSql(Expression<Func<T, T, bool>> joinKeyExpression, string[] storeGeneratedColumnNames, string sourceTableName = "s", string targetTableName = "t")
         {
             string joinConditionSql = string.Empty;
             if (joinKeyExpression != null)

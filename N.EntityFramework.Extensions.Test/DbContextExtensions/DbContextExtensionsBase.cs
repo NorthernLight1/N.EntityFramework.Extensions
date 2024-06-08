@@ -1,8 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using N.EntityFramework.Extensions.Test.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using N.EntityFramework.Extensions.Test.Data;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -30,6 +30,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             dbContext.ProductCategories.Clear();
             dbContext.ProductsWithCustomSchema.Truncate();
             dbContext.ProductsWithComplexKey.Truncate();
+            dbContext.ProductsWithTrigger.Truncate();
             dbContext.Database.ClearTable("TphPeople");
             dbContext.Database.ClearTable("TpcCustomer");
             dbContext.Database.ClearTable("TpcVendor");

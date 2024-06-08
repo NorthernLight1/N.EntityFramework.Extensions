@@ -1,7 +1,7 @@
-﻿using N.EntityFramework.Extensions.Enums;
-using System;
+﻿using System;
 using System.Data.Entity;
 using System.Data.SqlClient;
+using N.EntityFramework.Extensions.Enums;
 
 namespace N.EntityFramework.Extensions
 {
@@ -65,7 +65,7 @@ namespace N.EntityFramework.Extensions
         }
         internal void Rollback()
         {
-            if(transaction != null)
+            if (transaction != null)
                 transaction.Rollback();
         }
     }
