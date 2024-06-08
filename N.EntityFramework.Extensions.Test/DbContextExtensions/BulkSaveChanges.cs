@@ -206,5 +206,24 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(rowsAffected == productsToAdd.Count, "The number of rows affected must equal the sum of entities added, deleted and updated");
             Assert.IsTrue(oldTotalCount + productsToAdd.Count == newTotalCount, "The number of orders to add did not match what was expected.");
         }
+        [TestMethod]
+        public void With_Trigger()
+        {
+            var dbContext = SetupDbContext(true);
+            var oldTotalCount = dbContext.Orders.Where(o => o.Price == 10.57M).Count();
+
+            var productsToAdd = new List<ProductWithTrigger>();
+            for (int i = 0; i < 2000; i++)
+            {
+                productsToAdd.Add(new ProductWithTrigger { Id = i.ToString(), Price = 10.57M });
+            }
+            dbContext.ProductsWithTrigger.AddRange(productsToAdd);
+
+            int rowsAffected = dbContext.BulkSaveChanges(autoMapOutput:false);
+            int newTotalCount = dbContext.ProductsWithTrigger.Where(o => o.Price == 10.57M).Count();
+
+            Assert.IsTrue(rowsAffected == productsToAdd.Count, "The number of rows affected must equal the sum of entities added, deleted and updated");
+            Assert.IsTrue(oldTotalCount + productsToAdd.Count == newTotalCount, "The number of products to add did not match what was expected.");
+        }
     }
 }
