@@ -1,6 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using N.EntityFramework.Extensions.Test.Data;
-using System.Linq;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -15,10 +15,10 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             var fetchedOrders = dbContext.Orders.BulkFetch(orders);
             bool ordersAreMatched = true;
 
-            foreach(var fetchedOrder in fetchedOrders)
+            foreach (var fetchedOrder in fetchedOrders)
             {
                 var order = orders.First(o => o.Id == fetchedOrder.Id);
-                if(order.ExternalId  != fetchedOrder.ExternalId || order.AddedDateTime != fetchedOrder.AddedDateTime || order.ModifiedDateTime != fetchedOrder.ModifiedDateTime)
+                if (order.ExternalId != fetchedOrder.ExternalId || order.AddedDateTime != fetchedOrder.AddedDateTime || order.ModifiedDateTime != fetchedOrder.ModifiedDateTime)
                 {
                     ordersAreMatched = false;
                     break;
@@ -47,7 +47,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
         {
             var dbContext = SetupDbContext(true);
             var orders = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId != null).ToList();
-            var fetchedOrders = dbContext.Orders.BulkFetch(orders, options => {  options.IgnoreColumns = o => new { o.ExternalId }; }).ToList();
+            var fetchedOrders = dbContext.Orders.BulkFetch(orders, options => { options.IgnoreColumns = o => new { o.ExternalId }; }).ToList();
             int newTotal = dbContext.Orders.Where(o => o.Price <= 10 && o.ExternalId == null).Count();
             bool foundNullExternalId = fetchedOrders.Where(o => o.ExternalId != null).Any();
 

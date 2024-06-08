@@ -1,9 +1,9 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using N.EntityFramework.Extensions.Test.Data;
-using System;
+﻿using System;
 using System.Data.Entity;
 using System.Linq;
 using System.Xml.XPath;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using N.EntityFramework.Extensions.Test.Data;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -131,7 +131,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             Assert.IsTrue(expectedTotalCount == totalCount, "The total number of rows fetched must match the count of existing rows in database");
             Assert.IsTrue(expectedBatchCount == batchCount, "The total number of batches fetched must match what is expected");
         }
-    [TestMethod]
+        [TestMethod]
         public void With_Options_InputColumns()
         {
             var dbContext = SetupDbContext(true);

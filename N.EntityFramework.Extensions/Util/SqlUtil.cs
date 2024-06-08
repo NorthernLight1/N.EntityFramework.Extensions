@@ -13,7 +13,7 @@ namespace N.EntityFramework.Extensions
         {
             return SqlUtil.ExecuteSql(query, connection, transaction, null, commandTimeout);
         }
-        internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, object[] parameters = null, int? commandTimeout=null)
+        internal static int ExecuteSql(string query, SqlConnection connection, SqlTransaction transaction, object[] parameters = null, int? commandTimeout = null)
         {
             var sqlCommand = new SqlCommand(query, connection, transaction);
             if (connection.State == ConnectionState.Closed)
@@ -31,7 +31,7 @@ namespace N.EntityFramework.Extensions
                 connection.Open();
             if (commandTimeout.HasValue)
                 sqlCommand.CommandTimeout = commandTimeout.Value;
-            if(parameters != null)
+            if (parameters != null)
                 sqlCommand.Parameters.AddRange(parameters);
             return sqlCommand.ExecuteScalar();
         }
@@ -62,7 +62,7 @@ namespace N.EntityFramework.Extensions
 
         internal static bool TableExists(string tableName, SqlConnection dbConnection, SqlTransaction dbTransaction)
         {
-            return Convert.ToBoolean(ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName), 
+            return Convert.ToBoolean(ExecuteScalar(string.Format("SELECT CASE WHEN OBJECT_ID(N'{0}', N'U') IS NOT NULL THEN 1 ELSE 0 END", tableName),
                 dbConnection, dbTransaction, null));
         }
 
@@ -72,4 +72,3 @@ namespace N.EntityFramework.Extensions
         }
     }
 }
-

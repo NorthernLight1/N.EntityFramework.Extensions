@@ -1,7 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using N.EntityFramework.Extensions.Test.Data;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using N.EntityFramework.Extensions.Test.Data;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -23,7 +23,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
         [TestMethod]
         public async Task With_Default_Options_Tpc()
         {
-            var dbContext = SetupDbContext(true,PopulateDataMode.Tpc);
+            var dbContext = SetupDbContext(true, PopulateDataMode.Tpc);
             var customers = dbContext.TpcPeople.OfType<TpcCustomer>().ToList();
             int rowsDeleted = await dbContext.BulkDeleteAsync(customers, options => { options.DeleteOnCondition = (s, t) => s.Id == t.Id; });
             var newCustomers = dbContext.TpcPeople.OfType<TpcCustomer>().Count();

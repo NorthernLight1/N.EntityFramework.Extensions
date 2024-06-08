@@ -1,6 +1,6 @@
-﻿using N.EntityFramework.Extensions.Test.Data;
-using System;
+﻿using System;
 using System.Data.Entity;
+using N.EntityFramework.Extensions.Test.Data;
 
 
 namespace N.EntityFramework.Extensions.Test.Data
@@ -8,7 +8,7 @@ namespace N.EntityFramework.Extensions.Test.Data
     public class TestDbContext : DbContext
     {
         private static readonly string _connectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog = N.EntityFramework.Extensions.Test.Data.TestDbContext; Integrated Security = True; MultipleActiveResultSets=True";
-        public virtual DbSet<Order> Orders { get; set;  }
+        public virtual DbSet<Order> Orders { get; set; }
         public virtual DbSet<Product> Products { get; set; }
         public virtual DbSet<ProductCategory> ProductCategories { get; set; }
         public virtual DbSet<ProductWithComplexKey> ProductsWithComplexKey { get; set; }

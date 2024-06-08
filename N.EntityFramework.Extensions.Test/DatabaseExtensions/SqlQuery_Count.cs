@@ -1,6 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Data.SqlClient;
+﻿using System.Data.SqlClient;
 using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace N.EntityFramework.Extensions.Test.DatabaseExtensions
 {

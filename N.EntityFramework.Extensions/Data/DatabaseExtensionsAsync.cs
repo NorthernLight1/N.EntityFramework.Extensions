@@ -1,11 +1,11 @@
-﻿using N.EntityFramework.Extensions.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using N.EntityFramework.Extensions.Util;
 
 namespace N.EntityFramework.Extensions
 {

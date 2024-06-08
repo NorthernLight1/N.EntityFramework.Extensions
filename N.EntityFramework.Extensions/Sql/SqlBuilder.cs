@@ -1,5 +1,4 @@
-﻿using N.EntityFramework.Extensions.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity.Core.Objects;
@@ -10,6 +9,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using N.EntityFramework.Extensions.Util;
 
 namespace N.EntityFramework.Extensions.Sql
 {
@@ -41,13 +41,13 @@ namespace N.EntityFramework.Extensions.Sql
                 //Find new Sql clause
                 int maxLenToSearch = sqlText.Length - i >= 10 ? 10 : sqlText.Length - i;
                 string keyword = StartsWithString(sqlText.Substring(i, maxLenToSearch), keywords, StringComparison.OrdinalIgnoreCase);
-                bool isWordStart = i > 0 ? sqlText[i-1] == ' ' : true;
+                bool isWordStart = i > 0 ? sqlText[i - 1] == ' ' : true;
 
                 if (sqlText[i] == '(')
                     wrappedCount++;
-                else if(sqlText[i] == ')')
+                else if (sqlText[i] == ')')
                     wrappedCount--;
-                
+
                 //Process Sql clause
                 if (keyword != null && curClause != keyword && isWordStart && wrappedCount == 0)
                 {
@@ -83,7 +83,7 @@ namespace N.EntityFramework.Extensions.Sql
         }
         private static string StartsWithString(string textToSearch, IEnumerable<string> valuesToFind, StringComparison stringComparison)
         {
-            string value=null;
+            string value = null;
             foreach (var valueToFind in valuesToFind)
             {
                 bool isWord = textToSearch.Length > valueToFind.Length && textToSearch[valueToFind.Length] == ' ';
@@ -132,7 +132,7 @@ namespace N.EntityFramework.Extensions.Sql
                 sqlClause.InputText = sqlFromClause.InputText.Substring(aliasStartIndex, aliasLength);
             }
         }
-        public void ChangeToUpdate<T>(string tableName, Expression<Func<T,T>> updateExpression)
+        public void ChangeToUpdate<T>(string tableName, Expression<Func<T, T>> updateExpression)
         {
             Validate();
             string setSqlExpression = updateExpression.ToSqlUpdateSetExpression(tableName);
@@ -157,14 +157,14 @@ namespace N.EntityFramework.Extensions.Sql
         {
             var tableAlias = GetTableAlias();
             var sqlClause = Clauses.FirstOrDefault();
-            if(sqlClause.Name == "SELECT")
+            if (sqlClause.Name == "SELECT")
             {
                 sqlClause.InputText = string.Join(",", columns.Select(c => string.Format("{0}.{1}", tableAlias, c)));
             }
         }
         private void Validate()
         {
-            if(Clauses.Count == 0)
+            if (Clauses.Count == 0)
             {
                 throw new Exception("You must parse a valid sql statement before you can use this function.");
             }

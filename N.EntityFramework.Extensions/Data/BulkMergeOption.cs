@@ -9,7 +9,7 @@ namespace N.EntityFramework.Extensions
     {
         public Expression<Func<T, T, bool>> MergeOnCondition { get; set; }
         //public Func<T, T, bool> NotMatchedBySourceCondition { get; set; }
-       // public Func<T, T, bool> NotMatchedByTargetCondition { get; set; }
+        // public Func<T, T, bool> NotMatchedByTargetCondition { get; set; }
         //public Func<T, T, bool> MatchedCondition { get; set; }
         public Expression<Func<T, object>> IgnoreColumnsOnInsert { get; set; }
         public Expression<Func<T, object>> IgnoreColumnsOnUpdate { get; set; }

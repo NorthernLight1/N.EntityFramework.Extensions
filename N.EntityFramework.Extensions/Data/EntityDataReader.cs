@@ -1,5 +1,4 @@
-﻿using N.EntityFramework.Extensions.Common;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -7,13 +6,14 @@ using System.Data.Entity.Core.Mapping;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using N.EntityFramework.Extensions.Common;
 
 namespace N.EntityFramework.Extensions
 {
     internal class EntityDataReader<T> : IDataReader
     {
         public TableMapping TableMapping { get; set; }
-        public Dictionary<long,T> EntityMap { get; set; }
+        public Dictionary<long, T> EntityMap { get; set; }
         private readonly Dictionary<int, string> columnNames;
         private readonly Dictionary<string, int> columnIndexes;
         private long currentId;
@@ -60,7 +60,7 @@ namespace N.EntityFramework.Extensions
             {
                 this.valueMode = EntityValueMode.Object;
             }
-            else if(type.IsArray)
+            else if (type.IsArray)
             {
                 this.valueMode = EntityValueMode.Array;
             }
@@ -75,13 +75,13 @@ namespace N.EntityFramework.Extensions
                     selectors[column.Value] = expression.Compile();
                 }
             }
-            foreach(var condition in TableMapping.Conditions)
+            foreach (var condition in TableMapping.Conditions)
             {
                 conditions[i] = condition;
                 columnIndexes[condition.Column.Name] = i;
                 i++;
             }
-            if(useInternalId)
+            if (useInternalId)
             {
                 columnIndexes[Constants.InternalId_ColumnName] = i;
                 i++;
@@ -215,7 +215,7 @@ namespace N.EntityFramework.Extensions
 
         public object GetValue(int i)
         {
-            if(useInternalId && i == this.FieldCount - 1)
+            if (useInternalId && i == this.FieldCount - 1)
             {
                 return this.currentId;
             }
@@ -225,14 +225,14 @@ namespace N.EntityFramework.Extensions
                 {
                     return enumerator.Current;
                 }
-                else if(this.valueMode == EntityValueMode.Object)
+                else if (this.valueMode == EntityValueMode.Object)
                 {
                     var obj = (dynamic)enumerator.Current;
                     if (obj is IDynamicMetaObjectProvider)
                     {
                         return ((IDictionary<string, object>)obj)[this.columnNames[i]];
                     }
-                    else if(i < this.columnNames.Count)
+                    else if (i < this.columnNames.Count)
                     {
                         var property = obj.GetType().GetProperty(this.columnNames[i]);
                         if (property != null)
@@ -249,7 +249,7 @@ namespace N.EntityFramework.Extensions
                         return conditions[i].GetPrivateFieldValue("Value");
                     }
                 }
-                else if(this.valueMode == EntityValueMode.Array)
+                else if (this.valueMode == EntityValueMode.Array)
                 {
                     var array = enumerator.Current as object[];
                     return array[i];
@@ -259,7 +259,7 @@ namespace N.EntityFramework.Extensions
                     return i < selectors.Count ? selectors[i](enumerator.Current) : conditions[i].GetPrivateFieldValue("Value");
                 }
             }
-            
+
         }
 
         public int GetValues(object[] values)
@@ -280,7 +280,7 @@ namespace N.EntityFramework.Extensions
         public bool Read()
         {
             bool moveNext = enumerator.MoveNext();
-            
+
             if (moveNext && this.useInternalId)
             {
                 this.currentId++;
@@ -292,10 +292,9 @@ namespace N.EntityFramework.Extensions
 
     public enum EntityValueMode
     {
-        Value=1,
-        Object=2,
+        Value = 1,
+        Object = 2,
         MemberAccess = 3,
         Array = 4
     }
 }
-

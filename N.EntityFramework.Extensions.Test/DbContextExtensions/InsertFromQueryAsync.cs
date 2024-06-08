@@ -1,7 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {
@@ -36,7 +36,7 @@ namespace N.EntityFramework.Extensions.Test.DbContextExtensions
             string tableName = "OrdersUnderTen";
             var orders = dbContext.Orders.Where(o => o.Price < 10M);
             int oldSourceTotal = orders.Count();
-            int rowsInserted = await dbContext .Orders.Where(o => o.Price < 10M).InsertFromQueryAsync(tableName, o => new { o.Id, o.Price, o.AddedDateTime, o.Active });
+            int rowsInserted = await dbContext.Orders.Where(o => o.Price < 10M).InsertFromQueryAsync(tableName, o => new { o.Id, o.Price, o.AddedDateTime, o.Active });
             int newSourceTotal = orders.Count();
             int newTargetTotal = orders.UsingTable(tableName).Count();
 
