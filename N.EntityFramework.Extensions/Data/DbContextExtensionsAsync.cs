@@ -352,9 +352,13 @@ namespace N.EntityFramework.Extensions
         }
         public async static Task<int> BulkSaveChangesAsync(this DbContext dbContext)
         {
-            return await dbContext.BulkSaveChangesAsync(true);
+            return await dbContext.BulkSaveChangesAsync(true, true);
         }
         public async static Task<int> BulkSaveChangesAsync(this DbContext dbContext, bool acceptAllChangesOnSuccess = true, CancellationToken cancellationToken = default)
+        {
+            return await dbContext.BulkSaveChangesAsync(acceptAllChangesOnSuccess, true, cancellationToken);
+        }
+        public async static Task<int> BulkSaveChangesAsync(this DbContext dbContext, bool acceptAllChangesOnSuccess = true, bool autoMapOutput = false, CancellationToken cancellationToken = default)
         {
             int rowsAffected = 0;
             var entries = dbContext.GetEntriesToSave();
@@ -365,7 +369,7 @@ namespace N.EntityFramework.Extensions
                 var entities = saveEntryGroup.AsEnumerable().Select(o => o.Entity);
                 if (key.State == EntityState.Added)
                 {
-                    rowsAffected += await dbContext.BulkInsertAsync(entities, o => { o.ClrType = key.EntityType; }, cancellationToken);
+                    rowsAffected += await dbContext.BulkInsertAsync(entities, o => { o.ClrType = key.EntityType; o.AutoMapOutput = autoMapOutput; }, cancellationToken);
                 }
                 else if (key.State == EntityState.Modified)
                 {

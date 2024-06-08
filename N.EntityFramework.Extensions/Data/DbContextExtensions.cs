@@ -268,9 +268,9 @@ namespace N.EntityFramework.Extensions
         }
         public static int BulkSaveChanges(this DbContext dbContext)
         {
-            return dbContext.BulkSaveChanges(true);
+            return dbContext.BulkSaveChanges(true, true);
         }
-        public static int BulkSaveChanges(this DbContext dbContext, bool acceptAllChangesOnSuccess = true)
+        public static int BulkSaveChanges(this DbContext dbContext, bool acceptAllChangesOnSuccess = true, bool autoMapOutput = true)
         {
             int rowsAffected = 0;
             var entries = dbContext.GetEntriesToSave();
@@ -281,7 +281,7 @@ namespace N.EntityFramework.Extensions
                 var entities = saveEntryGroup.AsEnumerable().Select(o => o.Entity);
                 if (key.State == EntityState.Added)
                 {
-                    rowsAffected += dbContext.BulkInsert(entities, o => { o.ClrType = key.EntityType; });
+                    rowsAffected += dbContext.BulkInsert(entities, o => { o.ClrType = key.EntityType; o.AutoMapOutput = autoMapOutput; });
                 }
                 else if (key.State == EntityState.Modified)
                 {
