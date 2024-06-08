@@ -20,12 +20,12 @@ namespace N.EntityFramework.Extensions
         public string TableName { get; }
         public string FullQualifedTableName
         {
-            get { return string.Format("[{0}].[{1}]", this.Schema, this.TableName);  }
+            get { return string.Format("[{0}].[{1}]", this.Schema, this.TableName); }
         }
 
         public bool HasIdentity => this.Columns.Any(o => o.Column.IsStoreGeneratedIdentity);
 
-        public TableMapping(EntitySet entitySet, EntityType entityType, Type clrType, EntitySetMapping mapping, 
+        public TableMapping(EntitySet entitySet, EntityType entityType, Type clrType, EntitySetMapping mapping,
             List<ScalarPropertyMapping> columns, List<ConditionPropertyMapping> conditions)
         {
             var storeEntitySet = mapping.EntityTypeMappings.First(o => o.EntityType != null && o.EntityType.Name == entityType.Name).Fragments.Single().StoreEntitySet;
@@ -37,7 +37,7 @@ namespace N.EntityFramework.Extensions
             Mapping = mapping;
             Columns = columns;
             Conditions = conditions;
-            Schema = (string)storeEntitySet.MetadataProperties["Schema"].Value ?? storeEntitySet.Schema; 
+            Schema = (string)storeEntitySet.MetadataProperties["Schema"].Value ?? storeEntitySet.Schema;
             TableName = (string)storeEntitySet.MetadataProperties["Table"].Value ?? storeEntitySet.Name;
         }
 
@@ -66,7 +66,7 @@ namespace N.EntityFramework.Extensions
             EntitySet.ElementType.KeyMembers.Select(o => Columns.Single(c => c.Property.Name == o.Name).Column.Name);
         public IEnumerable<string> GetTableNames()
         {
-            foreach(var entityType in EntityTypes)
+            foreach (var entityType in EntityTypes)
             {
                 var storeEntitySet = Mapping.EntityTypeMappings.First(t => (t.EntityType != null && t.EntityType.Name == entityType.Name)
                         || t.IsOfEntityTypes.Any(o => o.Name == entityType.Name)).Fragments.Single().StoreEntitySet;
@@ -94,4 +94,3 @@ namespace N.EntityFramework.Extensions
         }
     }
 }
-

@@ -1,12 +1,12 @@
-﻿using N.EntityFramework.Extensions.Enums;
-using N.EntityFramework.Extensions.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
+using N.EntityFramework.Extensions.Enums;
+using N.EntityFramework.Extensions.Util;
 
 namespace N.EntityFramework.Extensions
 {
@@ -26,7 +26,7 @@ namespace N.EntityFramework.Extensions
         {
             string columns = columnNames != null && columnNames.Count() > 0 ? string.Join(",", CommonUtil.FormatColumns(columnNames)) : "*";
             columns = !string.IsNullOrEmpty(internalIdColumnName) ? string.Format("{0},CAST( NULL AS INT) AS {1}", columns, internalIdColumnName) : columns;
-            return database.ExecuteSqlCommand(TransactionalBehavior.DoNotEnsureTransaction,string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
+            return database.ExecuteSqlCommand(TransactionalBehavior.DoNotEnsureTransaction, string.Format("SELECT TOP 0 {0} INTO {1} FROM {2}", columns, destinationTable, sourceTable));
         }
         public static int DropTable(this Database database, string tableName, bool ifExists = false)
         {
@@ -73,7 +73,7 @@ namespace N.EntityFramework.Extensions
             }
             return value;
         }
-        internal static DbConnection GetConnection(this Database database,ConnectionBehavior connectionBehavior)
+        internal static DbConnection GetConnection(this Database database, ConnectionBehavior connectionBehavior)
         {
             return connectionBehavior == ConnectionBehavior.New ? ((ICloneable)database.Connection).Clone() as DbConnection : database.Connection;
         }

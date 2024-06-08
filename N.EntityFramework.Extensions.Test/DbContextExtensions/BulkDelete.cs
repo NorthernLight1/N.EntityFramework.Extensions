@@ -1,6 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using N.EntityFramework.Extensions.Test.Data;
-using System.Linq;
 
 namespace N.EntityFramework.Extensions.Test.DbContextExtensions
 {

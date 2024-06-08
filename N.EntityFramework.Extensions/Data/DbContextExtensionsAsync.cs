@@ -1,8 +1,4 @@
-﻿using N.EntityFramework.Extensions.Common;
-using N.EntityFramework.Extensions.Extensions;
-using N.EntityFramework.Extensions.Sql;
-using N.EntityFramework.Extensions.Util;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -20,6 +16,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using N.EntityFramework.Extensions.Common;
+using N.EntityFramework.Extensions.Extensions;
+using N.EntityFramework.Extensions.Sql;
+using N.EntityFramework.Extensions.Util;
 
 namespace N.EntityFramework.Extensions
 {
@@ -121,7 +121,7 @@ namespace N.EntityFramework.Extensions
         {
             await FetchAsync(querable, action, optionsAction.Build(), cancellationToken);
         }
-        public async static Task FetchAsync<T>(this IQueryable<T> querable, Func<FetchResult<T>,Task> action, FetchOptions<T> options, CancellationToken cancellationToken = default) where T : class, new()
+        public async static Task FetchAsync<T>(this IQueryable<T> querable, Func<FetchResult<T>, Task> action, FetchOptions<T> options, CancellationToken cancellationToken = default) where T : class, new()
         {
             var dbContext = querable.GetDbContext();
 
@@ -281,7 +281,7 @@ namespace N.EntityFramework.Extensions
                                 var entity = bulkInsertResult.EntityMap[entityId];
                                 for (int i = 2; i < columnsToOutput.Count; i++)
                                 {
-                                    propertySetters[i-2].SetValue(entity, result[i]);
+                                    propertySetters[i - 2].SetValue(entity, result[i]);
                                 }
                             }
                         }
@@ -525,7 +525,7 @@ namespace N.EntityFramework.Extensions
 
                     if (primaryKeyColumnNames.Length == 0 && options.UpdateOnCondition == null)
                         throw new InvalidDataException("BulkUpdate requires that the entity have a primary key or the Options.UpdateOnCondition must be set.");
-                    
+
                     context.Database.CloneTable(destinationTableName, stagingTableName);
                     await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity);
 
