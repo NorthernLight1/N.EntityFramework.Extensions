@@ -5,13 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace N.EntityFramework.Extensions.Test.Data
+namespace N.EntityFramework.Extensions.Test.Data;
+
+[Table("TphPeople")]
+public abstract class TphPerson
 {
-    [Table("TphPeople")]
-    public abstract class TphPerson
-    {
-        public long Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-    }
+    public long Id { get; set; }
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
 }

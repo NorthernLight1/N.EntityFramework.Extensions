@@ -4,12 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace N.EntityFramework.Extensions.Test.Data
+namespace N.EntityFramework.Extensions.Test.Data;
+
+public class TphVendor : TphPerson
 {
-    public class TphVendor : TphPerson
-    {
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public string Url { get; set; }
-    }
+    public string Email { get; set; }
+    public string Phone { get; set; }
+    public string Url { get; set; }
 }
