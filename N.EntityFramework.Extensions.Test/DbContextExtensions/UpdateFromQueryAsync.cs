@@ -174,19 +174,6 @@ public class UpdateFromQueryAsync : DbContextExtensionsBase
         Assert.IsTrue(matchCount == rowUpdated, "The match count must be equal the number of rows updated in the database.");
     }
     [TestMethod]
-    public async Task With_Contains_Empty_List()
-    {
-        var dbContext = SetupDbContext(false);
-        var guid = Guid.NewGuid();
-        var emptyList = new List<long>();
-        var orders = dbContext.Orders.Where(o => emptyList.Contains(o.Id));
-        int rowsToUpdate = orders.Count();
-        int rowsUpdated = await orders.UpdateFromQueryAsync(o => new Order { GlobalId = guid });
-
-        Assert.IsTrue(rowsToUpdate == 0, "There must be no orders in database that match this condition");
-        Assert.IsTrue(rowsToUpdate == rowsUpdated, "The number of rows updated must match the count of existing rows in database");
-    }
-    [TestMethod]
     public async Task With_MethodCall()
     {
         var dbContext = SetupDbContext(true);

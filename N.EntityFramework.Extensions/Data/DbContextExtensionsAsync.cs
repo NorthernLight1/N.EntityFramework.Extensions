@@ -671,10 +671,8 @@ namespace N.EntityFramework.Extensions
                 {
                     var sqlQuery = SqlBuilder.Parse(querable.GetSql(), querable.GetObjectQuery());
                     if (!sqlQuery.Clauses.Any(o => o.Name == "FROM" && o.InputText.EndsWith("[SingleRowTable1]")))
-                    {
-                        sqlQuery.ChangeToUpdate(sqlQuery.GetTableAlias(), updateExpression);
-                        rowAffected = await dbContext.Database.ExecuteSqlCommandAsync(sqlQuery.Sql, cancellationToken, sqlQuery.Parameters.ToArray());
-                    }
+                    sqlQuery.ChangeToUpdate(sqlQuery.GetTableAlias(), updateExpression);
+                    rowAffected = await dbContext.Database.ExecuteSqlCommandAsync(sqlQuery.Sql, cancellationToken, sqlQuery.Parameters.ToArray());
                     dbTransactionContext.Commit();
                 }
                 catch (Exception ex)
