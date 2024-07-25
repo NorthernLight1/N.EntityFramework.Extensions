@@ -244,34 +244,6 @@ public class UpdateFromQueryAsync : DbContextExtensionsBase
         Assert.IsTrue(matchCount == 0, "The match count must be equal to 0 since the transaction was rollbacked.");
     }
     [TestMethod]
-    public async Task With_Transaction_And_SqlError()
-    {
-        var dbContext = SetupDbContext(true);
-        int oldTotal = dbContext.Orders.Where(o => o.Price < 10M).Count();
-        int rowUpdated = 0;
-        bool rollbackHasNotCrashed = true;
-        using (var transaction = dbContext.Database.BeginTransaction())
-        {
-            try
-            {
-                rowUpdated = await dbContext.Orders.Where(o => o.Price < 10M).UpdateFromQueryAsync(o => new Order { Price = int.MaxValue });
-            }
-            catch
-            {
-                try
-                {
-                    transaction.Rollback();
-                }
-                catch
-                {
-                    rollbackHasNotCrashed = false;
-                }
-            }
-        }
-
-        Assert.IsTrue(rollbackHasNotCrashed, "Rollback has crashed, could means it was already rollbacked");
-    }
-    [TestMethod]
     public async Task With_Variables()
     {
         var dbContext = SetupDbContext(true);

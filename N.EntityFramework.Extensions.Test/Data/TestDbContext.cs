@@ -1,4 +1,7 @@
-﻿using System.Data.Entity;
+﻿using System;
+using System.Data.Entity;
+using N.EntityFramework.Extensions.Test.Data;
+
 
 namespace N.EntityFramework.Extensions.Test.Data;
 
@@ -23,9 +26,6 @@ public class TestDbContext : DbContext
     protected override void OnModelCreating(DbModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ProductWithCustomSchema>().ToTable(nameof(ProductsWithCustomSchema), "top");
-
-        modelBuilder.Entity<Order>()
-                   .Property(s => s.Price).HasPrecision(8, 2);
         //modelBuilder.Entity<Order>()
         //           .Property(s => s.DbAddedDateTime)
         //           .HasDatabaseGeneratedOption(System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.Computed);
