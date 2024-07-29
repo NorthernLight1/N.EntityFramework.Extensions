@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.Entity.Core.Objects;
-using System.Data.SqlClient;
-using System.Data.SqlTypes;
-using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using N.EntityFramework.Extensions.Util;
 
 namespace N.EntityFramework.Extensions.Sql
 {
@@ -20,12 +15,12 @@ namespace N.EntityFramework.Extensions.Sql
         {
             get { return this.ToString(); }
         }
-        public SqlParameter[] Parameters { get; private set; }
+        public DbParameter[] Parameters { get; private set; }
         public List<SqlClause> Clauses { get; private set; }
-        private SqlBuilder(string sql, SqlParameter[] parameters = default)
+        private SqlBuilder(string sql, DbParameter[] parameters = default)
         {
             Clauses = new List<SqlClause>();
-            Parameters = parameters == null ? new SqlParameter[0] : parameters;
+            Parameters = parameters == null ? new DbParameter[0] : parameters;
             Initialize(sql);
         }
 
@@ -102,19 +97,37 @@ namespace N.EntityFramework.Extensions.Sql
         }
         public static SqlBuilder Parse<T>(string sql, ObjectQuery<T> objectQuery)
         {
-            var sqlParameters = new List<SqlParameter>();
+            var sqlParameters = new List<DbParameter>();
+
             if (objectQuery != null)
             {
                 foreach (var parameter in objectQuery.Parameters)
                 {
-                    var sqlParameter = new SqlParameter(parameter.Name, parameter.Value);
-                    if (sqlParameter.SqlDbType == SqlDbType.DateTime)
+                    DbParameter sqlParameter;
+
+                    if (objectQuery.Context.Connection is System.Data.SqlClient.SqlConnection ||
+                        objectQuery.Context.Connection is System.Data.Entity.Core.EntityClient.EntityConnection)
                     {
-                        sqlParameter.SqlDbType = SqlDbType.DateTime2;
+                        sqlParameter = new System.Data.SqlClient.SqlParameter(parameter.Name, parameter.Value);
                     }
+                    else if (objectQuery.Context.Connection is Microsoft.Data.SqlClient.SqlConnection)
+                    {
+                        sqlParameter = new Microsoft.Data.SqlClient.SqlParameter(parameter.Name, parameter.Value);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("Unsupported provider: " + objectQuery.Context.Connection.GetType().Namespace);
+                    }
+
+                    if (sqlParameter.DbType == System.Data.DbType.DateTime)
+                    {
+                        sqlParameter.DbType = System.Data.DbType.DateTime2;
+                    }
+
                     sqlParameters.Add(sqlParameter);
                 }
             }
+
             return new SqlBuilder(sql, sqlParameters.ToArray());
         }
         public void ChangeToDelete()

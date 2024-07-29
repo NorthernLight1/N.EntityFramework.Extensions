@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.Entity;
-using System.Data.SqlClient;
 using System.Linq;
 using N.EntityFramework.Extensions.Enums;
 using N.EntityFramework.Extensions.Util;
@@ -14,12 +13,12 @@ namespace N.EntityFramework.Extensions
     {
         public static SqlQuery FromSqlQuery(this Database database, string sqlText, params object[] parameters)
         {
-            var dbConnection = database.Connection as SqlConnection;
+            var dbConnection = database.Connection;
             return new SqlQuery(dbConnection, sqlText, parameters);
         }
         public static int ClearTable(this Database database, string tableName)
         {
-            var dbConnection = database.Connection as SqlConnection;
+            var dbConnection = database.Connection;
             return SqlUtil.ClearTable(tableName, dbConnection, null);
         }
         internal static int CloneTable(this Database database, string sourceTable, string destinationTable, IEnumerable<string> columnNames = null, string internalIdColumnName = null)
@@ -36,7 +35,7 @@ namespace N.EntityFramework.Extensions
         }
         public static void TruncateTable(this Database database, string tableName, bool ifExists = false)
         {
-            var dbConnection = database.Connection as SqlConnection;
+            var dbConnection = database.Connection;
             bool truncateTable = !ifExists || (ifExists && SqlUtil.TableExists(tableName, dbConnection, null)) ? true : false;
             if (truncateTable)
             {
@@ -57,12 +56,12 @@ namespace N.EntityFramework.Extensions
         internal static object ExecuteScalar(this Database database, string query, object[] parameters = null, int? commandTimeout = null)
         {
             object value;
-            var dbConnection = database.Connection as SqlConnection;
+            var dbConnection = database.Connection;
             using (var sqlCommand = dbConnection.CreateCommand())
             {
                 sqlCommand.CommandText = query;
                 if (database.CurrentTransaction != null)
-                    sqlCommand.Transaction = database.CurrentTransaction.UnderlyingTransaction as SqlTransaction;
+                    sqlCommand.Transaction = database.CurrentTransaction.UnderlyingTransaction;
                 if (dbConnection.State == ConnectionState.Closed)
                     dbConnection.Open();
                 if (commandTimeout.HasValue)
