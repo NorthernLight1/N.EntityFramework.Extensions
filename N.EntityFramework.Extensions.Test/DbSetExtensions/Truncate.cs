@@ -2,21 +2,20 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using N.EntityFramework.Extensions.Test.DbContextExtensions;
 
-namespace N.EntityFramework.Extensions.Test.DbSetExtensions
-{
-    [TestClass]
-    public class Truncate : DbContextExtensionsBase
-    {
-        [TestMethod]
-        public void Using_Dbset()
-        {
-            var dbContext = SetupDbContext(true);
-            int oldOrdersCount = dbContext.Orders.Count();
-            dbContext.Orders.Truncate();
-            int newOrdersCount = dbContext.Orders.Count();
+namespace N.EntityFramework.Extensions.Test.DbSetExtensions;
 
-            Assert.IsTrue(oldOrdersCount > 0, "Orders table should have data");
-            Assert.IsTrue(newOrdersCount == 0, "Order table should be empty after truncating");
-        }
+[TestClass]
+public class Truncate : DbContextExtensionsBase
+{
+    [TestMethod]
+    public void Using_Dbset()
+    {
+        var dbContext = SetupDbContext(true);
+        int oldOrdersCount = dbContext.Orders.Count();
+        dbContext.Orders.Truncate();
+        int newOrdersCount = dbContext.Orders.Count();
+
+        Assert.IsTrue(oldOrdersCount > 0, "Orders table should have data");
+        Assert.IsTrue(newOrdersCount == 0, "Order table should be empty after truncating");
     }
 }

@@ -65,7 +65,7 @@ namespace N.EntityFramework.Extensions
         }
         internal void Rollback()
         {
-            if (transaction != null)
+            if (this.ownsTransaction && transaction != null)
                 transaction.Rollback();
         }
     }

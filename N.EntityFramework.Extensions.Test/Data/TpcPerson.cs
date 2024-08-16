@@ -5,13 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace N.EntityFramework.Extensions.Test.Data
+namespace N.EntityFramework.Extensions.Test.Data;
+
+public abstract class TpcPerson
 {
-    public abstract class TpcPerson
-    {
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public long Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-    }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long Id { get; set; }
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
 }

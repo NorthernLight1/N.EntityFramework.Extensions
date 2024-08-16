@@ -6,15 +6,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace N.EntityFramework.Extensions.Test.Data
+namespace N.EntityFramework.Extensions.Test.Data;
+
+public class ProductWithCustomSchema
 {
-    public class ProductWithCustomSchema
-    {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public string Id { get; set; }
-        [StringLength(50)]
-        public string Name { get; set; }
-        public decimal Price { get; set; }
-    }
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public string Id { get; set; }
+    [StringLength(50)]
+    public string Name { get; set; }
+    public decimal Price { get; set; }
 }
