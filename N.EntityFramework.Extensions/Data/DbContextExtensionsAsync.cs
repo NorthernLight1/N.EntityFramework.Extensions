@@ -1,19 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.Entity;
-using System.Data.Entity.Core.Mapping;
-using System.Data.Entity.Core.Metadata.Edm;
-using System.Data.Entity.Core.Objects;
-using System.Data.Entity.Infrastructure;
-using System.Data.Entity.Infrastructure.Interception;
-using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using N.EntityFramework.Extensions.Common;
@@ -53,7 +46,7 @@ namespace N.EntityFramework.Extensions
                         throw new InvalidDataException("BulkDelete requires that the entity have a primary key or the Options.DeleteOnCondition must be set.");
 
                     context.Database.CloneTable(destinationTableName, stagingTableName, keyColumnNames);
-                    await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlBulkCopyOptions.KeepIdentity,
+                    await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlClientUtil.GetSqlBulkCopyOptionsKeepIdentity(dbConnection),
                         false, false, cancellationToken);
                     string deleteSql = string.Format("DELETE t FROM {0} s JOIN {1} t ON {2}", stagingTableName, destinationTableName,
                         CommonUtil<T>.GetJoinConditionSql(options.DeleteOnCondition, keyColumnNames));
@@ -100,7 +93,7 @@ namespace N.EntityFramework.Extensions
                         throw new InvalidDataException("BulkFetch requires that the entity have a primary key or the Options.JoinOnCondition must be set.");
 
                     await context.Database.CloneTableAsync(destinationTableName, stagingTableName, keyColumnNames, null, cancellationToken);
-                    await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlBulkCopyOptions.KeepIdentity, false, false, cancellationToken);
+                    await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, keyColumnNames, SqlClientUtil.GetSqlBulkCopyOptionsKeepIdentity(dbConnection) , false, false, cancellationToken);
                     selectSql = string.Format("SELECT {0} FROM {1} s JOIN {2} t ON {3}", SqlUtil.ConvertToColumnString(columnsToFetch), stagingTableName, destinationTableName,
                         CommonUtil<T>.GetJoinConditionSql(options.JoinOnCondition, keyColumnNames));
 
@@ -245,7 +238,7 @@ namespace N.EntityFramework.Extensions
                     }
 
                     context.Database.CloneTable(destinationTableName, stagingTableName, columnNames, Common.Constants.InternalId_ColumnName);
-                    var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, columnNames, SqlBulkCopyOptions.KeepIdentity, true, true, cancellationToken);
+                    var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, columnNames, SqlClientUtil.GetSqlBulkCopyOptionsKeepIdentity(dbConnection), true, true, cancellationToken);
 
                     List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
@@ -300,16 +293,13 @@ namespace N.EntityFramework.Extensions
                 }
             }
         }
-        private async static Task<BulkInsertResult<T>> BulkInsertAsync<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, SqlConnection dbConnection, SqlTransaction transaction, string tableName,
-            IEnumerable<string> inputColumns = null, SqlBulkCopyOptions bulkCopyOptions = SqlBulkCopyOptions.Default, bool useInteralId = false, bool includeConditionColumns = true, CancellationToken cancellationToken = default)
+        private async static Task<BulkInsertResult<T>> BulkInsertAsync<T>(IEnumerable<T> entities, BulkOptions options, TableMapping tableMapping, DbConnection dbConnection, DbTransaction transaction, string tableName,
+            IEnumerable<string> inputColumns = null, Enum bulkCopyOptions = null, bool useInteralId = false, bool includeConditionColumns = true, CancellationToken cancellationToken = default)
         {
             var dataReader = new EntityDataReader<T>(tableMapping, entities, inputColumns, useInteralId);
 
-            var sqlBulkCopy = new SqlBulkCopy(dbConnection, bulkCopyOptions, transaction)
-            {
-                DestinationTableName = tableName,
-                BatchSize = options.BatchSize
-            };
+            var sqlBulkCopy = SqlClientUtil.CreateSqlBulkCopy(dbConnection, transaction, tableName, bulkCopyOptions, options.BatchSize, options.CommandTimeout);
+
             if (options.CommandTimeout.HasValue)
             {
                 sqlBulkCopy.BulkCopyTimeout = options.CommandTimeout.Value;
@@ -334,9 +324,14 @@ namespace N.EntityFramework.Extensions
 
             return new BulkInsertResult<T>
             {
-                RowsAffected = Convert.ToInt32(sqlBulkCopy.GetPrivateFieldValue("_rowsCopied")),
+                RowsAffected = Convert.ToInt32(GetPrivateFieldValue(sqlBulkCopy,"_rowsCopied")),
                 EntityMap = dataReader.EntityMap
             };
+        }
+        private static object GetPrivateFieldValue(object obj, string fieldName)
+        {
+            var fieldInfo = obj.GetType().GetField(fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return fieldInfo?.GetValue(obj);
         }
         public async static Task<BulkMergeResult<T>> BulkMergeAsync<T>(this DbContext context, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class
         {
@@ -429,7 +424,7 @@ namespace N.EntityFramework.Extensions
                         throw new InvalidDataException("BulkMerge requires that the entity have a primary key or the Options.MergeOnCondition must be set.");
 
                     context.Database.CloneTable(destinationTableName, stagingTableName, null, Common.Constants.InternalId_ColumnName);
-                    var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity, true, true, cancellationToken);
+                    var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlClientUtil.GetSqlBulkCopyOptionsKeepIdentity(dbConnection), true, true, cancellationToken);
 
                     IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames.Where(o => !options.GetIgnoreColumnsOnInsert().Contains(o)));
                     IEnumerable<string> columnstoUpdate = CommonUtil.FormatColumns(columnNames.Where(o => !options.GetIgnoreColumnsOnUpdate().Contains(o))).Select(o => string.Format("t.{0}=s.{0}", o));
@@ -532,7 +527,7 @@ namespace N.EntityFramework.Extensions
                         throw new InvalidDataException("BulkUpdate requires that the entity have a primary key or the Options.UpdateOnCondition must be set.");
 
                     context.Database.CloneTable(destinationTableName, stagingTableName);
-                    await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlBulkCopyOptions.KeepIdentity);
+                    await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, null, SqlClientUtil.GetSqlBulkCopyOptionsKeepIdentity(dbConnection));
 
                     IEnumerable<string> columnstoUpdate = CommonUtil.FormatColumns(columnNames.Where(o => !options.IgnoreColumns.GetObjectProperties().Contains(o)));
 
@@ -555,7 +550,7 @@ namespace N.EntityFramework.Extensions
                 return rowsUpdated;
             }
         }
-        private async static Task<BulkQueryResult> BulkQueryAsync(this DbContext context, string sqlText, SqlConnection dbConnection, SqlTransaction transaction, BulkOptions options, CancellationToken cancellationToken = default)
+        private async static Task<BulkQueryResult> BulkQueryAsync(this DbContext context, string sqlText, DbConnection dbConnection, DbTransaction transaction, BulkOptions options, CancellationToken cancellationToken = default)
         {
             var results = new List<object[]>();
             var columns = new List<string>();
@@ -740,7 +735,7 @@ namespace N.EntityFramework.Extensions
         public async static Task<QueryToFileResult> SqlQueryToCsvFileAsync(this Database database, Stream stream, QueryToFileOptions options, string sqlText, object[] parameters,
             CancellationToken cancellationToken = default)
         {
-            var dbConnection = database.Connection as SqlConnection;
+            var dbConnection = database.Connection;
             return await InternalQueryToFileAsync(dbConnection, stream, options, sqlText, parameters, cancellationToken);
         }
         public async static Task ClearAsync<T>(this DbSet<T> dbSet, CancellationToken cancellationToken = default) where T : class
@@ -759,10 +754,10 @@ namespace N.EntityFramework.Extensions
             CancellationToken cancellationToken = default) where T : class
         {
             var dbContext = querable.GetDbContext();
-            var dbConnection = dbContext.GetSqlConnection();
+            var dbConnection = dbContext.Database.Connection;
             return await InternalQueryToFileAsync(dbConnection, stream, options, querable.GetSql(), null, cancellationToken);
         }
-        private async static Task<QueryToFileResult> InternalQueryToFileAsync(SqlConnection dbConnection, Stream stream, QueryToFileOptions options, string sqlText, object[] parameters = null,
+        private async static Task<QueryToFileResult> InternalQueryToFileAsync(DbConnection dbConnection, Stream stream, QueryToFileOptions options, string sqlText, object[] parameters = null,
             CancellationToken cancellationToken = default)
         {
             int dataRowCount = 0;
@@ -771,66 +766,72 @@ namespace N.EntityFramework.Extensions
 
             //Open datbase connection
             if (dbConnection.State == ConnectionState.Closed)
-                dbConnection.Open();
+                await dbConnection.OpenAsync();
 
-            var command = new SqlCommand(sqlText, dbConnection);
-            if (parameters != null)
+            using (var command = dbConnection.CreateCommand())
             {
-                command.Parameters.AddRange(parameters);
-            }
-            if (options.CommandTimeout.HasValue)
-            {
-                command.CommandTimeout = options.CommandTimeout.Value;
-            }
 
-            StreamWriter streamWriter = new StreamWriter(stream);
-            using (var reader = await command.ExecuteReaderAsync(cancellationToken))
-            {
-                //Header row
-                if (options.IncludeHeaderRow)
+                command.CommandText = sqlText;
+
+                if (parameters != null)
                 {
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        streamWriter.Write(options.TextQualifer);
-                        streamWriter.Write(reader.GetName(i));
-                        streamWriter.Write(options.TextQualifer);
-                        if (i != reader.FieldCount - 1)
-                        {
-                            await streamWriter.WriteAsync(options.ColumnDelimiter);
-                        }
-                    }
-                    totalRowCount++;
-                    await streamWriter.WriteAsync(options.RowDelimiter);
+                    command.Parameters.AddRange(parameters);
                 }
-                //Write data rows to file
-                while (await reader.ReadAsync(cancellationToken))
+                if (options.CommandTimeout.HasValue)
                 {
-                    Object[] values = new Object[reader.FieldCount];
-                    reader.GetValues(values);
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        streamWriter.Write(options.TextQualifer);
-                        streamWriter.Write(values[i]);
-                        streamWriter.Write(options.TextQualifer);
-                        if (i != values.Length - 1)
-                        {
-                            await streamWriter.WriteAsync(options.ColumnDelimiter);
-                        }
-                    }
-                    await streamWriter.WriteAsync(options.RowDelimiter);
-                    dataRowCount++;
-                    totalRowCount++;
+                    command.CommandTimeout = options.CommandTimeout.Value;
                 }
-                await streamWriter.FlushAsync();
-                bytesWritten = streamWriter.BaseStream.Length;
-                streamWriter.Close();
+
+                StreamWriter streamWriter = new StreamWriter(stream);
+                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                {
+                    //Header row
+                    if (options.IncludeHeaderRow)
+                    {
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            streamWriter.Write(options.TextQualifer);
+                            streamWriter.Write(reader.GetName(i));
+                            streamWriter.Write(options.TextQualifer);
+                            if (i != reader.FieldCount - 1)
+                            {
+                                await streamWriter.WriteAsync(options.ColumnDelimiter);
+                            }
+                        }
+                        totalRowCount++;
+                        await streamWriter.WriteAsync(options.RowDelimiter);
+                    }
+                    //Write data rows to file
+                    while (await reader.ReadAsync(cancellationToken))
+                    {
+                        Object[] values = new Object[reader.FieldCount];
+                        reader.GetValues(values);
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            streamWriter.Write(options.TextQualifer);
+                            streamWriter.Write(values[i]);
+                            streamWriter.Write(options.TextQualifer);
+                            if (i != values.Length - 1)
+                            {
+                                await streamWriter.WriteAsync(options.ColumnDelimiter);
+                            }
+                        }
+                        await streamWriter.WriteAsync(options.RowDelimiter);
+                        dataRowCount++;
+                        totalRowCount++;
+                    }
+                    await streamWriter.FlushAsync();
+                    bytesWritten = streamWriter.BaseStream.Length;
+                    streamWriter.Close();
+                }
+                return new QueryToFileResult()
+                {
+                    BytesWritten = bytesWritten,
+                    DataRowCount = dataRowCount,
+                    TotalRowCount = totalRowCount
+                };
             }
-            return new QueryToFileResult()
-            {
-                BytesWritten = bytesWritten,
-                DataRowCount = dataRowCount,
-                TotalRowCount = totalRowCount
-            };
+            
         }
     }
 }

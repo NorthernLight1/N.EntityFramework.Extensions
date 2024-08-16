@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
+﻿using System.Data.Common;
 using System.Data.Entity.Infrastructure.Interception;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace N.EntityFramework.Extensions
 {
@@ -14,7 +8,7 @@ namespace N.EntityFramework.Extensions
         public EfExtensionsCommandType CommandType { get; set; }
         public string OldValue { get; set; }
         public string NewValue { get; set; }
-        public SqlConnection Connection { get; internal set; }
+        public DbConnection Connection { get; internal set; }
 
         internal bool Execute(DbCommand command, DbCommandInterceptionContext<DbDataReader> interceptionContext)
         {

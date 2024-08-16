@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
+using System.Data.Common;
 using System.Threading.Tasks;
 using N.EntityFramework.Extensions.Sql;
 
@@ -11,11 +7,11 @@ namespace N.EntityFramework.Extensions
 {
     public class SqlQuery
     {
-        private SqlConnection Connection { get; set; }
+        private DbConnection Connection { get; set; }
         public string SqlText { get; private set; }
         public object[] Parameters { get; private set; }
 
-        public SqlQuery(SqlConnection sqlConnection, String sqlText, params object[] parameters)
+        public SqlQuery(DbConnection sqlConnection, String sqlText, params object[] parameters)
         {
             this.Connection = sqlConnection;
             this.SqlText = sqlText;
