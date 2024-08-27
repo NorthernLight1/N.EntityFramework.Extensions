@@ -13,6 +13,6 @@ internal sealed class TestDbConfiguration : DbMigrationsConfiguration<TestDbCont
     {
         AutomaticMigrationsEnabled = true;
         AutomaticMigrationDataLossAllowed = true;
-        ContextKey = "N.EntityFramework.Extensions.Test.Data.TestDbContext";
+        ContextKey = "N.EntityFramework.Extensions.Test";
     }
 }

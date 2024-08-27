@@ -1,21 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace N.EntityFramework.Extensions.Util
 {
     internal static class CommonUtil
     {
-        internal static string GetStagingTableName(TableMapping tableMapping, bool usePermanentTable, SqlConnection sqlConnection)
+        internal static string GetStagingTableName(TableMapping tableMapping, bool usePermanentTable, DbConnection dbConnection)
         {
             string tableName = string.Empty;
             if (usePermanentTable)
-                tableName = string.Format("[{0}].[tmp_be_xx_{1}_{2}]", tableMapping.Schema, tableMapping.TableName, sqlConnection.ClientConnectionId.ToString());
+            {
+                string clientConnectionId = SqlClientUtil.GetClientConnectionId(dbConnection);
+
+                tableName = string.Format("[{0}].[tmp_be_xx_{1}_{2}]", tableMapping.Schema, tableMapping.TableName, clientConnectionId);
+            }
             else
                 tableName = string.Format("[{0}].[#tmp_be_xx_{1}]", tableMapping.Schema, tableMapping.TableName);
             return tableName;

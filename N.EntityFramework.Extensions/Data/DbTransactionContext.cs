@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Data.Common;
 using System.Data.Entity;
-using System.Data.SqlClient;
 using N.EntityFramework.Extensions.Enums;
 
 namespace N.EntityFramework.Extensions
@@ -14,8 +14,8 @@ namespace N.EntityFramework.Extensions
         private DbContextTransaction transaction;
         private ConnectionBehavior connectionBehavior;
 
-        public SqlConnection Connection { get; internal set; }
-        public SqlTransaction CurrentTransaction => transaction != null ? transaction.UnderlyingTransaction as SqlTransaction : null;
+        public DbConnection Connection { get; internal set; }
+        public DbTransaction CurrentTransaction => transaction != null ? transaction.UnderlyingTransaction: null;
 
 
         public DbTransactionContext(DbContext context, BulkOptions options) : this(context, options.ConnectionBehavior, options.TransactionalBehavior, options.CommandTimeout)
@@ -38,7 +38,7 @@ namespace N.EntityFramework.Extensions
             {
                 this.transaction = context.Database.BeginTransaction();
             }
-            this.Connection = context.Database.GetConnection(connectionBehavior) as SqlConnection;
+            this.Connection = context.Database.GetConnection(connectionBehavior);
             if (openConnection)
             {
                 if (this.Connection.State == System.Data.ConnectionState.Closed)
