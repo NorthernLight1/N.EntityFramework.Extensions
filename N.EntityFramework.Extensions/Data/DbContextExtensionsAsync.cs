@@ -240,7 +240,7 @@ namespace N.EntityFramework.Extensions
                     context.Database.CloneTable(destinationTableName, stagingTableName, columnNames, Common.Constants.InternalId_ColumnName);
                     var bulkInsertResult = await BulkInsertAsync(entities, options, tableMapping, dbConnection, transaction, stagingTableName, columnNames, SqlClientUtil.GetSqlBulkCopyOptionsKeepIdentity(dbConnection), true, true, cancellationToken);
 
-                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
+                    List<string> columnsToOutput = new List<string> { "$action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
                     Type clrType = tableMapping.ClrType;
 
@@ -260,7 +260,7 @@ namespace N.EntityFramework.Extensions
 
                     if (options.KeepIdentity && tableMapping.HasIdentity)
                         SqlUtil.ToggleIdentityInsert(true, destinationTableName, dbConnection, transaction);
-                    var bulkQueryResult = await context.BulkQueryAsync(insertSqlText, dbConnection, transaction, options, cancellationToken);
+                    var bulkQueryResult = await context.BulkQueryAsync( insertSqlText, dbConnection, transaction, options, cancellationToken);
                     if (options.KeepIdentity && tableMapping.HasIdentity)
                         SqlUtil.ToggleIdentityInsert(false, destinationTableName, dbConnection, transaction);
                     rowsAffected = bulkQueryResult.RowsAffected;
@@ -428,7 +428,7 @@ namespace N.EntityFramework.Extensions
 
                     IEnumerable<string> columnsToInsert = CommonUtil.FormatColumns(columnNames.Where(o => !options.GetIgnoreColumnsOnInsert().Contains(o)));
                     IEnumerable<string> columnstoUpdate = CommonUtil.FormatColumns(columnNames.Where(o => !options.GetIgnoreColumnsOnUpdate().Contains(o))).Select(o => string.Format("t.{0}=s.{0}", o));
-                    List<string> columnsToOutput = new List<string> { "$Action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
+                    List<string> columnsToOutput = new List<string> { "$action", string.Format("{0}.{1}", "s", Constants.InternalId_ColumnName) };
                     List<PropertyInfo> propertySetters = new List<PropertyInfo>();
                     Type entityType = typeof(T);
 

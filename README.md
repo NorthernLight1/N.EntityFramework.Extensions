@@ -4,7 +4,7 @@
 
 **If you are using Entity Framework Core v8.0.0+ you can use https://github.com/NorthernLight1/N.EntityFrameworkCore.Extensions
 
-## Bulk data support for the EntityFramework 6.4.4+
+## Bulk data support for the EntityFramework 6.5.0+
 
 Entity Framework Extensions extends your DbContext with high-performance bulk operations: BulkDelete, BulkFetch, BulkInsert, BulkMerge, BulkSaveChanges, BulkSync, BulkUpdate, Fetch, FromSqlQuery, DeleteFromQuery, InsertFromQuery, UpdateFromQuery, QueryToCsvFile, SqlQueryToCsvFile
 
