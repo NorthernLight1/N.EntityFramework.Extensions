@@ -175,7 +175,7 @@ public class BulkInsertAsync : DbContextExtensionsBase
         bool threwException = false;
         var dbContext = SetupDbContext(false);
         var orders = new List<Order>();
-        for (int i = 0; i < 700000; i++)
+        for (int i = 0; i < 1000000; i++)
         {
             orders.Add(new Order { Id = i, Price = 1.57M });
         }
