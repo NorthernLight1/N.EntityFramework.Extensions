@@ -104,13 +104,13 @@ namespace N.EntityFramework.Extensions.Sql
                 foreach (var parameter in objectQuery.Parameters)
                 {
                     DbParameter sqlParameter;
+                    DbConnection connection = objectQuery.Context.Connection is System.Data.Entity.Core.EntityClient.EntityConnection entityConnection ? entityConnection.StoreConnection : objectQuery.Context.Connection;
 
-                    if (objectQuery.Context.Connection is System.Data.SqlClient.SqlConnection ||
-                        objectQuery.Context.Connection is System.Data.Entity.Core.EntityClient.EntityConnection)
+                    if (connection is System.Data.SqlClient.SqlConnection)
                     {
                         sqlParameter = new System.Data.SqlClient.SqlParameter(parameter.Name, parameter.Value);
                     }
-                    else if (objectQuery.Context.Connection is Microsoft.Data.SqlClient.SqlConnection)
+                    else if (connection is Microsoft.Data.SqlClient.SqlConnection)
                     {
                         sqlParameter = new Microsoft.Data.SqlClient.SqlParameter(parameter.Name, parameter.Value);
                     }
