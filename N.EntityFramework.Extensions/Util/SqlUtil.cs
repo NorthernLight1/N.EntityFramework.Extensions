@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -26,6 +26,22 @@ namespace N.EntityFramework.Extensions
                 if (parameters != null)
                     dbCommand.Parameters.AddRange(parameters);
                 return dbCommand.ExecuteNonQuery();
+            }
+        }
+        internal static async System.Threading.Tasks.Task<int> ExecuteSqlAsync(string query, DbConnection connection, DbTransaction transaction, object[] parameters = null, int? commandTimeout = null)
+        {
+            using (var dbCommand = connection.CreateCommand())
+            {
+                dbCommand.CommandText = query;
+                if (transaction != null)
+                    dbCommand.Transaction = transaction;
+                if (connection.State == ConnectionState.Closed)
+                    await connection.OpenAsync();
+                if (commandTimeout.HasValue)
+                    dbCommand.CommandTimeout = commandTimeout.Value;
+                if (parameters != null)
+                    dbCommand.Parameters.AddRange(parameters);
+                return await dbCommand.ExecuteNonQueryAsync();
             }
         }
         internal static object ExecuteScalar(string query, DbConnection connection, DbTransaction transaction, object[] parameters = null, int? commandTimeout = null)
