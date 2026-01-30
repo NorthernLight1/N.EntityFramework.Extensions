@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Core.Mapping;
@@ -18,10 +18,11 @@ namespace N.EntityFramework.Extensions
         public List<ConditionPropertyMapping> Conditions { get; set; }
         public string Schema { get; }
         public string TableName { get; }
-        public string FullQualifedTableName
-        {
-            get { return string.Format("[{0}].[{1}]", this.Schema, this.TableName); }
-        }
+        [Obsolete("Use FullQualifiedTableName instead.")]
+        public string FullQualifedTableName => FullQualifiedTableName;
+
+        public string FullQualifiedTableName =>
+            string.Format("[{0}].[{1}]", Schema, TableName);
 
         public bool HasIdentity => this.Columns.Any(o => o.Column.IsStoreGeneratedIdentity);
 
