@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -202,10 +202,10 @@ namespace N.EntityFramework.Extensions
                     //ClearEntityStateToUnchanged(context, entities);
                     dbTransactionContext.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     dbTransactionContext.Rollback();
-                    throw ex;
+                    throw;
                 }
                 return rowsAffected;
             }
@@ -532,33 +532,32 @@ namespace N.EntityFramework.Extensions
                 if (parameters != null)
                     command.Parameters.AddRange(parameters);
 
-                var reader = command.ExecuteReader();
-
-                List<PropertyInfo> propertySetters = new List<PropertyInfo>();
-                var entityType = typeof(T);
-                for (int i = 0; i < reader.FieldCount; i++)
+                using (var reader = command.ExecuteReader())
                 {
-                    propertySetters.Add(entityType.GetProperty(reader.GetName(i)));
-                }
-                while (reader.Read())
-                {
-                    var entity = new T();
+                    List<PropertyInfo> propertySetters = new List<PropertyInfo>();
+                    var entityType = typeof(T);
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        var value = reader.GetValue(i);
-                        if (value == DBNull.Value)
-                            value = null;
-                        propertySetters[i].SetValue(entity, value);
+                        propertySetters.Add(entityType.GetProperty(reader.GetName(i)));
                     }
-                    yield return entity;
+                    while (reader.Read())
+                    {
+                        var entity = new T();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            var value = reader.GetValue(i);
+                            if (value == DBNull.Value)
+                                value = null;
+                            propertySetters[i].SetValue(entity, value);
+                        }
+                        yield return entity;
+                    }
                 }
-                //close the DataReader
-                reader.Close();
             }
         }
         private static void ClearEntityStateToUnchanged<T>(DbContext dbContext, IEnumerable<T> entities)
         {
-            bool autoDetectCahngesEnabled = dbContext.Configuration.AutoDetectChangesEnabled;
+            bool autoDetectChangesEnabled = dbContext.Configuration.AutoDetectChangesEnabled;
             dbContext.Configuration.AutoDetectChangesEnabled = false;
             foreach (var entity in entities)
             {
@@ -566,39 +565,41 @@ namespace N.EntityFramework.Extensions
                 if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
                     dbContext.Entry(entity).State = EntityState.Unchanged;
             }
-            dbContext.Configuration.AutoDetectChangesEnabled = autoDetectCahngesEnabled;
+            dbContext.Configuration.AutoDetectChangesEnabled = autoDetectChangesEnabled;
         }
         private static BulkQueryResult BulkQuery(this DbContext context, string sqlText, DbConnection dbConnection, DbTransaction transaction, BulkOptions options)
         {
             var results = new List<object[]>();
             var columns = new List<string>();
-            var command = context.Database.Connection.CreateCommand();
-            command.Transaction = transaction;
-            command.CommandText = sqlText;
-            if (options.CommandTimeout.HasValue)
+            using (var command = dbConnection.CreateCommand())
             {
-                command.CommandTimeout = options.CommandTimeout.Value;
-            }
-            using (var reader = command.ExecuteReader())
-            {
-                //Get column names
-                for (int i = 0; i < reader.FieldCount; i++)
+                command.Transaction = transaction;
+                command.CommandText = sqlText;
+                if (options.CommandTimeout.HasValue)
                 {
-                    columns.Add(reader.GetName(i));
+                    command.CommandTimeout = options.CommandTimeout.Value;
                 }
-                //Read data
-                while (reader.Read())
+                using (var reader = command.ExecuteReader())
                 {
-                    Object[] values = new Object[reader.FieldCount];
-                    reader.GetValues(values);
-                    results.Add(values);
+                    //Get column names
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        columns.Add(reader.GetName(i));
+                    }
+                    //Read data
+                    while (reader.Read())
+                    {
+                        Object[] values = new Object[reader.FieldCount];
+                        reader.GetValues(values);
+                        results.Add(values);
+                    }
+                    return new BulkQueryResult
+                    {
+                        Columns = columns,
+                        Results = results,
+                        RowsAffected = reader.RecordsAffected
+                    };
                 }
-                return new BulkQueryResult
-                {
-                    Columns = columns,
-                    Results = results,
-                    RowsAffected = reader.RecordsAffected
-                };
             }
         }
         public static int DeleteFromQuery<T>(this IQueryable<T> querable)
@@ -688,8 +689,10 @@ namespace N.EntityFramework.Extensions
         }
         public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, String filePath, QueryToFileOptions options)
         {
-            var fileStream = File.Create(filePath);
-            return QueryToCsvFile<T>(querable, fileStream, options);
+            using (var fileStream = File.Create(filePath))
+            {
+                return QueryToCsvFile<T>(querable, fileStream, options);
+            }
         }
         public static QueryToFileResult QueryToCsvFile<T>(this IQueryable<T> querable, Stream stream, QueryToFileOptions options)
         {
@@ -713,8 +716,10 @@ namespace N.EntityFramework.Extensions
         }
         public static QueryToFileResult SqlQueryToCsvFile(this Database database, string filePath, QueryToFileOptions options, string sqlText, params object[] parameters)
         {
-            var fileStream = File.Create(filePath);
-            return SqlQueryToCsvFile(database, fileStream, options, sqlText, parameters);
+            using (var fileStream = File.Create(filePath))
+            {
+                return SqlQueryToCsvFile(database, fileStream, options, sqlText, parameters);
+            }
         }
         public static QueryToFileResult SqlQueryToCsvFile(this Database database, Stream stream, QueryToFileOptions options, string sqlText, params object[] parameters)
         {
@@ -743,7 +748,7 @@ namespace N.EntityFramework.Extensions
                     command.CommandTimeout = options.CommandTimeout.Value;
                 }
 
-                StreamWriter streamWriter = new StreamWriter(stream);
+                using (var streamWriter = new StreamWriter(stream))
                 using (var reader = command.ExecuteReader())
                 {
                     //Header row
@@ -783,7 +788,6 @@ namespace N.EntityFramework.Extensions
                     }
                     streamWriter.Flush();
                     bytesWritten = streamWriter.BaseStream.Length;
-                    streamWriter.Close();
                 }
             }
             return new QueryToFileResult()
