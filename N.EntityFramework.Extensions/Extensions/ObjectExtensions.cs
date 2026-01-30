@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -8,7 +8,7 @@ namespace N.EntityFramework.Extensions
     {
         public static object GetPrivateFieldValue(this object obj, string propName)
         {
-            if (obj == null) throw new ArgumentNullException("obj");
+            if (obj == null) throw new ArgumentNullException(nameof(obj));
             Type t = obj.GetType();
             FieldInfo fieldInfo = null;
             PropertyInfo propertyInfo = null;
@@ -23,7 +23,7 @@ namespace N.EntityFramework.Extensions
                 t = t.BaseType;
             }
             if (fieldInfo == null && propertyInfo == null)
-                throw new ArgumentOutOfRangeException("propName", string.Format("Field {0} was not found in Type {1}", propName, obj.GetType().FullName));
+                throw new ArgumentOutOfRangeException(nameof(propName), string.Format("Field {0} was not found in Type {1}", propName, obj.GetType().FullName));
 
             if (fieldInfo != null)
                 return fieldInfo.GetValue(obj);
