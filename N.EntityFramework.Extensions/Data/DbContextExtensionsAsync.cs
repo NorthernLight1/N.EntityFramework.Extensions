@@ -626,7 +626,7 @@ namespace N.EntityFramework.Extensions
                     }
                     dbTransactionContext.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     dbTransactionContext.Rollback();
                     throw;
@@ -689,7 +689,7 @@ namespace N.EntityFramework.Extensions
                     }
                     dbTransactionContext.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     dbTransactionContext.Rollback();
                     throw;
