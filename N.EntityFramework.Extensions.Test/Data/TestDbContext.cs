@@ -1,10 +1,13 @@
-﻿using System.Data.Entity;
+﻿using System;
+using System.Data.Entity;
 
 namespace N.EntityFramework.Extensions.Test.Data;
 
 public class TestDbContext : DbContext
 {
-    private static readonly string _connectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog = N.EntityFramework.Extensions.Test; Integrated Security = True; MultipleActiveResultSets=True";
+    private static readonly string _connectionString =
+        Environment.GetEnvironmentVariable("EF_TEST_CONNECTION_STRING")
+        ?? @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=N.EntityFramework.Extensions.Test;Integrated Security=True;MultipleActiveResultSets=True";
     public virtual DbSet<Order> Orders { get; set; }
     public virtual DbSet<Product> Products { get; set; }
     public virtual DbSet<ProductCategory> ProductCategories { get; set; }
