@@ -5,12 +5,14 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace N.EntityFramework.Extensions
 {
     static class LinqExtensions
     {
+        private static readonly Regex SqlStringLiteralRegex = new Regex(@"('(?:''|[^'])*')", RegexOptions.Compiled);
+
         internal static string GetExpressionValueAsString(MemberBinding binding)
         {
             return GetExpressionValueAsString(binding.GetPrivateFieldValue("Expression") as Expression);
@@ -148,14 +150,23 @@ namespace N.EntityFramework.Extensions
         {
             List<string> setValues = new List<string>();
             var memberInitExpression = expression.Body as MemberInitExpression;
+            string oldPrefix = expression.Parameters.First().Name + ".";
+            string newPrefix = tableName + ".";
             foreach (var binding in memberInitExpression.Bindings)
             {
                 string expValue = GetExpressionValueAsString(binding);
-                expValue = expValue.Replace(string.Format("{0}.", expression.Parameters.First().Name),
-                    string.Format("{0}.", tableName));
+                expValue = ReplaceOutsideSqlStringLiterals(expValue, oldPrefix, newPrefix);
                 setValues.Add(string.Format("{0}.[{1}]={2}", tableName, binding.Member.Name, expValue));
             }
             return string.Join(",", setValues);
+        }
+
+        private static string ReplaceOutsideSqlStringLiterals(string input, string oldValue, string newValue)
+        {
+            var parts = SqlStringLiteralRegex.Split(input);
+            for (int i = 0; i < parts.Length; i += 2)
+                parts[i] = parts[i].Replace(oldValue, newValue);
+            return string.Join("", parts);
         }
     }
 }
